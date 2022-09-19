@@ -1,0 +1,29 @@
+#!/bin/sh
+
+if test ! -e decyb ; then
+   gcc -Wall -O2 -o decyb decyb.c
+fi
+
+ren()
+{
+   if test -e "$1" ; then
+      mv "$1" "$1".bak
+   fi
+}
+
+ren RaceSetup
+ren AllPositions3
+
+wget https://cf.yb.tl/JSON/ggr2022/RaceSetup
+wget https://cf.yb.tl/BIN/ggr2022/AllPositions3
+
+which jq >/dev/null
+if test $? -eq 0 ; then
+   jq . <RaceSetup >RaceSetup.json
+else
+   echo "jq missing, RaceSetup not beautified"
+   cp RaceSetup RaceSetup.json
+fi
+
+./decyb <AllPositions3 >AllPositions3.json
+
