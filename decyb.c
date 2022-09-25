@@ -95,7 +95,7 @@ static unsigned getUint32(const char *buf, size_t pos)
 
 static int getInt16(const char *buf, size_t pos)
 {
-   return be16toh(*((int16_t*) &buf[pos]));
+   return (int16_t) be16toh(*((int16_t*) &buf[pos]));
 }
 
 
@@ -107,13 +107,13 @@ static int getInt32(const char *buf, size_t pos)
 
 void output_positions(int id, const moment_t *m, int v)
 {
-   printf("{\n   \"id\": %d,\n   \"moments\": [\n", id);
+   printf("   {\n      \"id\": %d,\n      \"moments\": [\n", id);
    for (int i = 0; i < v; i++)
    {
-      printf("   {\n      \"dtf\": %d,\n      \"lat\": %f,\n      \"lon\": %f,\n      \"at\": %d\n   }%s\n",
+      printf("         {\n            \"dtf\": %d,\n            \"lat\": %.7g,\n            \"lon\": %.7g,\n            \"at\": %d\n         }%s\n",
             m[i].dtf, m[i].lat / 1e5 , m[i].lon / 1e5, m[i].at, i < v - 1 ? "," : "");
    }
-   printf("   ]\n}");
+   printf("      ]\n   }");
 }
 
 
