@@ -1,17 +1,25 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
    <head>
       <meta charset="UTF-8"/>
       <script src="decyb.js" charset="UTF-8"></script>
+      <style>
+         body {
+            margin:0;
+            height: 100%;
+         }
+      </style>
      </head>
    <body>
-      <div style="position:relative">
-         <canvas id="chart"></canvas>
-      </div>
-      <pre id="pre"></pre> 
+        <div style="position:relative">
+         <canvas id="chart" style="display:block;"></canvas>
+         </div>
+      <!--<pre id="pre"></pre>-->
       <script defer="defer" type="text/javascript">
 
          get_data("localhost");
+         window.addEventListener('resize', function(e){update_graph()});
+         document.getElementById("chart").addEventListener('mousemove', function(e){mouse_move_handler(e);});
 
       </script>
    </body>
