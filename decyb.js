@@ -93,14 +93,14 @@ function calc_moments(moments)
 }
  
 
-function calc_data()
+function calc_data(data_)
 {
    for (var i = 0; i < data_.length; i++)
       calc_moments(data_[i].moments);
 }
 
 
-function data_check()
+function data_check(setup_, data_)
 {
    for (var i = 0; i < data_.length; i++)
       if (data_[i].id != setup_.teams[i].id)
@@ -129,9 +129,9 @@ function draw_moments(ctx, moments, t_min, d_max)
 }
 
 
-function draw_data()
+function draw_data(setup_, data_)
 {
-   data_check();
+   data_check(setup_, data_);
 
    document.body.style.backgroundColor = "#171717";
    var canvas = document.getElementById("chart");
@@ -169,21 +169,22 @@ function draw_data()
 }
 
 
-function pnd(e)
+function get_data(server)
 {
-   data_ = parse(e);
-   calc_data();
-   draw_data();
-}
+   fetch('https://' + server + '/JSON/ggr2022/RaceSetup')
+   .then((response) => response.json())
+   .then((setup) => {
+      fetch('https://' + server + '/BIN/ggr2022/AllPositions3')
+      .then((response) => response.arrayBuffer())
+      .then((data) => {
+         var jdata = parse(data);
+         //console.log(jdata);
+         //console.log(setup);
 
-
-function requestAll(e, t)
-{
-   var a = new XMLHttpRequest;
-   a.open("GET", "https://" + e + "/BIN/" + t + "/AllPositions3", !0);
-   a.responseType = "arraybuffer";
-   a.onload = function() { 0 === a.status || 200 !== a.status ? console.log("error = " + a.status) : pnd(a.response); };
-   a.onerror = function() { console.log("http error"); };
-   a.send();
+         calc_data(jdata);
+         //document.getElementById("pre").innerHTML = JSON.stringify(jdata, null, 2);
+         draw_data(setup, jdata);
+      })
+   });
 }
 

@@ -15,14 +15,17 @@ ren RaceSetup
 ren AllPositions3
 
 wget https://cf.yb.tl/JSON/ggr2022/RaceSetup
+wget https://cf.yb.tl/JSON/ggr2022/leaderboard
 wget https://cf.yb.tl/BIN/ggr2022/AllPositions3
 
 which jq >/dev/null
 if test $? -eq 0 ; then
    jq . <RaceSetup >RaceSetup.json
+   jq . <leaderboard >leaderboard.json
 else
    echo "jq missing, RaceSetup not beautified"
-   cp RaceSetup RaceSetup.json
+   ln -s RaceSetup RaceSetup.json
+   ln -s leaderboard leaderboard.json
 fi
 
 ./decyb <AllPositions3 >AllPositions3.json

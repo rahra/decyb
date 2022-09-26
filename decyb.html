@@ -3,31 +3,16 @@
    <head>
       <meta charset="UTF-8"/>
       <script src="decyb.js" charset="UTF-8"></script>
-      <script src="RaceSetup.js" charset="UTF-8"></script>
-      <script src="AllPositions3.js" charset="UTF-8"></script>
-      <!--
-      <script defer="defer" type="text/javascript">
-         var p = new PositionParser();
-         var e = p.requestAll("cf.yb.tl", "ggr2022");
-         calc_data();
-         console.log(data_);
-         console.log(setup_);
-         //draw_data();
-      </script>
-      -->
-   </head>
+     </head>
    <body>
       <div style="position:relative">
          <canvas id="chart"></canvas>
       </div>
       <pre id="pre"></pre> 
       <script defer="defer" type="text/javascript">
-         //var data_ = [];
-         //requestAll("cf.yb.tl", "ggr2022");
-         //requestAll("localhost", "ggr2022");
-         calc_data();
-         document.getElementById("pre").innerHTML = JSON.stringify(data_, null, 2);
-         draw_data();
+
+         get_data("localhost");
+
       </script>
    </body>
 </html>
