@@ -61,8 +61,6 @@
 #include <unistd.h>
 #include <endian.h>
 
-#define MAX_MOMENTS 4096
-
 
 typedef struct moment
 {
@@ -135,10 +133,7 @@ int PositionParser(const char *buf, int len)
 {
    int a, s, n, r, l, y, M, b, L, x, f;
    unsigned i, o, u, h, v, p, w, T;
-   moment_t g, m;
-   moment_t d[MAX_MOMENTS];
-
-   memset(d, 0, sizeof(d));
+   moment_t g, m, *d;
 
    l = 0;
    i = readUint8(buf, &l);
@@ -154,12 +149,12 @@ int PositionParser(const char *buf, int len)
       u = readUint16(buf, &l);
       h = readUint16(buf, &l);
 
+      if ((d = calloc(h, sizeof(*d))) == NULL)
+         perror("calloc():"), exit(1);
+
       memset(&g, 0, sizeof(g));
       for (v = 0; v < h; v++)
       {
-         // safety check
-         if (v >= MAX_MOMENTS) fprintf(stderr, "MAX_MOMENTS too small, increase and recompile!\n"), exit(1);
-
          memset(&m, 0, sizeof(m));
          p = getUint8(buf, l);
          if (128 & p)
@@ -217,8 +212,11 @@ int PositionParser(const char *buf, int len)
          d[v] = m;
          g = m;
       } // for (v = 0; v < h; v++)
+
       output_positions(u, d, v);
       printf("%s\n", l < len - 1 ? "," : "");
+
+      free(d);
    }
    printf("]\n");
 
