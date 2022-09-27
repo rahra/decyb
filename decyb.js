@@ -69,17 +69,50 @@ function fmod2(a)
 }
 
 
-function coord_diff(src, dst)
+function coord_diff0(src, dst, dst2)
 {
    var dlat, dlon;
+   var dist, bearing;
 
    dlat = dst.lat - src.lat;
    dlon = (dst.lon - src.lon) * Math.cos(DEG2RAD((src.lat + dst.lat) / 2.0));
 
-   dst.bearing = fmod2(RAD2DEG(Math.atan2(dlon, dlat)));
-   dst.dist = 60 * RAD2DEG(Math.acos(
+   dst2.bearing = fmod2(RAD2DEG(Math.atan2(dlon, dlat)));
+   dst2.dist = 60 * RAD2DEG(Math.acos(
       Math.sin(DEG2RAD(src.lat)) * Math.sin(DEG2RAD(dst.lat)) +
       Math.cos(DEG2RAD(src.lat)) * Math.cos(DEG2RAD(dst.lat)) * Math.cos(DEG2RAD(dst.lon - src.lon))));
+}
+
+
+function coord_diff(src, dst)
+{
+   coord_diff0(src, dst, dst);
+}
+
+
+function calc_poi(moments)
+{
+   var i = 0;
+   for (var j = 0; j < nodes_.length; j++)
+   {
+      var d = {};
+      var dist = Number.POSITIVE_INFINITY;
+      var ix = -1;
+      for (; i < moments.length; i++)
+      {
+         coord_diff0(moments[i], nodes_[j], d);
+         if (d.dist < dist)
+         {
+            dist = d.dist;
+            ix = i;
+         }
+         else
+         {
+            moments[i].name = nodes_[j].name;
+            break;
+         }
+      }
+   }
 }
 
 
@@ -92,7 +125,6 @@ function calc_moments(moments)
       moments[i - 1].dist_tot = moments[i - 1].dist + moments[i].dist_tot;
       moments[i - 1].td = moments[i - 1].at - moments[i].at;
       moments[i - 1].v_avg = moments[i - 1].dist / moments[i - 1].td * 3600;
-      //if (moments[i - 1].v_avg > 12) console.log(moments[i]);
    }
 }
  
@@ -100,7 +132,10 @@ function calc_moments(moments)
 function calc_data(data_)
 {
    for (var i = 0; i < data_.length; i++)
+   {
       calc_moments(data_[i].moments);
+      calc_poi(data_[i].moments);
+   }
 }
 
 
@@ -125,14 +160,42 @@ function draw_v_avg(ctx, C, moments)
 }
 
 
-
 function draw_moments(ctx, C, moments)
 {
-      ctx.beginPath();
-      ctx.moveTo(0, C.d_max * C.sy);
-      for (var i = moments.length - 1; i >= 0; i--)
-            ctx.lineTo((moments[i].at - C.t_min) * C.sx, (C.d_max - moments[i].dist_tot) * C.sy);
-      ctx.stroke();
+   ctx.beginPath();
+   ctx.moveTo(0, C.d_max * C.sy);
+   for (var i = moments.length - 1; i >= 0; i--)
+      ctx.lineTo((moments[i].at - C.t_min) * C.sx, (C.d_max - moments[i].dist_tot) * C.sy);
+   ctx.stroke();
+}
+
+
+function draw_marks(ctx, C, moments)
+{
+   var AR = 4;
+   ctx.save();
+   ctx.fillStyle = "#d00000";
+   ctx.beginPath();
+   for (var i = moments.length - 1; i >= 0; i--)
+      if (moments[i].hasOwnProperty("name"))
+      {
+         ctx.arc((moments[i].at - C.t_min) * C.sx, (C.d_max - moments[i].dist_tot) * C.sy, AR, 0, 2 * Math.PI);
+         ctx.fillText(moments[i].name, (moments[i].at - C.t_min) * C.sx, (C.d_max - moments[i].dist_tot) * C.sy - AR);
+      }
+   ctx.fill();
+   ctx.restore();
+}
+
+
+function caption(ctx, C)
+{
+   var text = title_.split("\n");
+
+   ctx.save();
+   ctx.fillStyle = "#b0b0b0";
+   for (var i = 0; i < text.length; i++)
+      ctx.fillText(text[i], (C.t_max - C.t_min) * C.sx * 0.33, 20 * (i + 1));
+   ctx.restore();
 }
 
 
@@ -239,6 +302,7 @@ function draw_data(setup_, data_)
    ctx.font = "14px sans-serif";
 
    axis(ctx, C);
+   caption(ctx, C);
 
    for (var i = 0; i < data_.length; i++)
    {
@@ -258,6 +322,7 @@ function draw_data(setup_, data_)
       ctx.strokeStyle = "#" + setup_.teams[i].colour + o;
       ctx.fillStyle = "#" + setup_.teams[i].colour + o;
       draw_moments(ctx, C, data_[i].moments);
+      draw_marks(ctx, C, data_[i].moments);
       draw_v_avg(ctx, C, data_[i].moments);
       var v_avg = data_[i].moments[0].dist_tot * 3600 / (data_[i].moments[0].at - data_[i].moments[data_[i].moments.length - 1].at);
       ctx.fillText("(" + i + ") " + setup_.teams[i].name + ", dist = " + data_[i].moments[0].dist_tot.toFixed(1) + ", v_avg = " + v_avg.toFixed(2), TEXTX, (i+1) * NDIST);
