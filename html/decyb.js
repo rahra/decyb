@@ -6,6 +6,8 @@ const cscheme_ = [{bg: "#171717", cap: "#b0b0b0", xbg: "#b0b0b030", tx: "#c0c0c0
 var cur_scheme_ = 0;
 var col_ = cscheme_[cur_scheme_];
 
+var tw_;
+
 
 function parse(e)
 {
@@ -319,6 +321,21 @@ function axis(ctx, C)
 }
 
 
+function measure_names(ctx, setup_, data_)
+{
+   var w = 0;
+   ctx.save();
+   ctx.font = "bold 14px sans-serif";
+   for (var i = 0; i < data_.length; i++)
+   {
+      var v_avg = data_[i].moments[0].dist_tot * 3600 / (data_[i].moments[0].at - data_[i].moments[data_[i].moments.length - 1].at);
+      w = Math.max(w, ctx.measureText(setup_.teams[i].name + ", dist = " + data_[i].moments[0].dist_tot.toFixed(1) + ", v_avg = " + v_avg.toFixed(2)).width);
+   }
+   ctx.restore();
+   return w;
+}
+
+
 function draw_data(setup_, data_)
 {
    //data_check(setup_, data_);
@@ -362,14 +379,16 @@ function draw_data(setup_, data_)
    axis(ctx, C);
    caption(ctx, C);
 
+   tw_ = measure_names(ctx, setup_, data_);
+
    ctx.fillStyle = col_.xbg;
-   ctx.rect(TEXTX - 10, 0, 370, data_.length * NDIST + 10);
+   ctx.rect(TEXTX - 10, 0, tw_, data_.length * NDIST + 10);
    ctx.fill();
 
    for (var i = 0; i < data_.length; i++)
    {
       //if (data_[i].id != 3) continue;
-      if (_a == i || setup_.teams[i].visible)
+      if (_a == i /*|| setup_.teams[i].visible*/)
       {
          o = "ff";
          ctx.lineWidth = 3;
@@ -406,7 +425,7 @@ function handle_mouse_pos(e)
 
    var x = window.innerWidth * BORDER;
    var y = window.innerHeight * BORDER;
-   _a = mx >= x + TEXTX && mx < x + TEXTX + 350 && my >= y && my < _j.length * NDIST + y ? Math.floor((my - y) / NDIST) : -1;
+   _a = mx >= x + TEXTX && mx < x + TEXTX + tw_ && my >= y && my < _j.length * NDIST + y ? Math.floor((my - y) / NDIST) : -1;
 }
 
 function mouse_move_handler(e)
