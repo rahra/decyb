@@ -92,13 +92,12 @@ function coord_diff(src, dst)
 
 function calc_poi(moments)
 {
-   var i = 0;
    for (var j = 0; j < nodes_.length; j++)
    {
       var d = {};
-      var dist = Number.POSITIVE_INFINITY;
-      var ix = -1;
-      for (; i < moments.length; i++)
+      var dist = 100000;
+      var ix = moments.length;
+      for (var i = 0; i < moments.length; i++)
       {
          coord_diff0(moments[i], nodes_[j], d);
          if (d.dist < dist)
@@ -106,12 +105,8 @@ function calc_poi(moments)
             dist = d.dist;
             ix = i;
          }
-         else
-         {
-            moments[i].name = nodes_[j].name;
-            break;
-         }
       }
+      moments[ix].name = nodes_[j].name;
    }
 }
 
