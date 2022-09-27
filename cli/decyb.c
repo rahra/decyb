@@ -145,7 +145,7 @@ int PositionParser(const char *buf, int len)
       for (v = 0; v < h; v++)
       {
          // safety check
-         if (v >= MAX_MOMENTS) fprintf(stderr, "MAX_MOMENTS too small, increase in recompile!\n"), exit(1);
+         if (v >= MAX_MOMENTS) fprintf(stderr, "MAX_MOMENTS too small, increase and recompile!\n"), exit(1);
 
          p = getUint8(buf, l);
          memset(&m, 0, sizeof(m));
