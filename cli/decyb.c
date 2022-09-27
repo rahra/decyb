@@ -75,33 +75,47 @@ typedef struct moment
 } moment_t;
 
 
-static unsigned getUint8(const char *buf, size_t pos)
+static unsigned getUint8(const char *buf, int pos)
 {
    return buf[pos];
 }
 
 
-static unsigned getUint16(const char *buf, size_t pos)
+static unsigned readUint8(const char *buf, int *pos)
 {
-   return be16toh(*((uint16_t*) &buf[pos]));
+   return buf[(*pos)++];
 }
 
 
-static unsigned getUint32(const char *buf, size_t pos)
+static unsigned readUint16(const char *buf, int *pos)
 {
-   return be32toh(*((uint32_t*) &buf[pos]));
+   unsigned r = be16toh(*((uint16_t*) &buf[*pos]));
+   *pos += 2;
+   return r;
 }
 
 
-static int getInt16(const char *buf, size_t pos)
+static unsigned readUint32(const char *buf, int *pos)
 {
-   return (int16_t) be16toh(*((int16_t*) &buf[pos]));
+   unsigned r = be32toh(*((uint32_t*) &buf[*pos]));
+   *pos += 4;
+   return r;
 }
 
 
-static int getInt32(const char *buf, size_t pos)
+static int readInt16(const char *buf, int *pos)
 {
-   return be32toh(*((int32_t*) &buf[pos]));
+   int16_t r = be16toh(*((int16_t*) &buf[*pos]));
+   *pos += 2;
+   return r;
+}
+
+
+static int readInt32(const char *buf, int *pos)
+{
+   int r = be32toh(*((int32_t*) &buf[*pos]));
+   *pos += 4;
+   return r;
 }
 
 
@@ -126,20 +140,19 @@ int PositionParser(const char *buf, int len)
 
    memset(d, 0, sizeof(d));
 
-   i = getUint8(buf, 0);
+   l = 0;
+   i = readUint8(buf, &l);
    a = 1 & i;
    s = 2 & i;
    n = 4 & i;
    r = 8 & i;
-   o = getUint32(buf, 1);
+   o = readUint32(buf, &l);
 
    printf("[\n");
-   for (l = 5; l < len;)
+   for (; l < len;)
    {
-      u = getUint16(buf, l);
-      l += 2;
-      h = getUint16(buf, l);
-      l += 2;
+      u = readUint16(buf, &l);
+      h = readUint16(buf, &l);
 
       memset(&g, 0, sizeof(g));
       for (v = 0; v < h; v++)
@@ -147,37 +160,29 @@ int PositionParser(const char *buf, int len)
          // safety check
          if (v >= MAX_MOMENTS) fprintf(stderr, "MAX_MOMENTS too small, increase and recompile!\n"), exit(1);
 
-         p = getUint8(buf, l);
          memset(&m, 0, sizeof(m));
+         p = getUint8(buf, l);
          if (128 & p)
          {
-            w = getUint16(buf, l);
-            l += 2;
-            y = getInt16(buf, l);
-            l += 2;
-            M = getInt16(buf, l);
-            l += 2;
-            if (a)   // a && (m.alt = t.getInt16(l)
-            {
-               m.alt = getInt16(buf, l);
-               l += 2;
-            }  
+            w = readUint16(buf, &l);
+            y = readInt16(buf, &l);
+            M = readInt16(buf, &l);
+
+            if (a)
+               m.alt = readInt16(buf, &l);
+
             if (s)
             {
-               f = getInt16(buf, l);
-               l += 2;
+               f = readInt16(buf, &l);
                m.dtf = g.dtf + f;
-               if (n)   // n && (m.lap = t.getUint8(l)
-               {
-                  m.lap = getUint8(buf, l);
-                  l++;
-               }
+
+               if (n)
+                  m.lap = readUint8(buf, &l);
             }
+
             if (r)
-            {
-               m.pc = getInt16(buf, l) / 32e3;
-               l += 2;
-            }
+               m.pc = readInt16(buf, &l) / 32e3;
+
             w = 32767 & w;
             m.lat = g.lat + y;
             m.lon = g.lon + M;
@@ -186,40 +191,32 @@ int PositionParser(const char *buf, int len)
          }
          else
          {
-            T = getUint32(buf, l);
-            l += 4;
-            b = getInt32(buf, l);
-            l += 4;
-            L = getInt32(buf, l);
-            l += 4;
+            T = readUint32(buf, &l);
+            b = readInt32(buf, &l);
+            L = readInt32(buf, &l);
+
             if (a)
-            {
-               m.alt = getInt16(buf, l);
-               l += 2;
-            }
+               m.alt = readInt16(buf, &l);
+
             if (s)
             {
-               x = getInt32(buf, l);
-               l += 4; 
+               x = readInt32(buf, &l);
                m.dtf = x;
+
                if (n)
-               {
-                  m.lap = getUint8(buf, l);
-                  l++;
-               }
+                  m.lap = readUint8(buf, &l);
             }
+
             if (r)
-            {
-               m.pc = getInt32(buf, l) / 21e6;
-               l += 4;
-            }
+               m.pc = readInt32(buf, &l) / 21e6;
+
             m.lat = b;
             m.lon = L;
             m.at = o + T;
          }
          d[v] = m;
          g = m;
-      } // for (g = 0, v = 0; v < h; v++)
+      } // for (v = 0; v < h; v++)
       output_positions(u, d, v);
       printf("%s\n", l < len - 1 ? "," : "");
    }
