@@ -159,20 +159,21 @@ function find_pass_lat(moments, lat)
 
 
 /*! This function finds the nearest track points to the points defined in the
- * global array nodes_. Nodes_ contains track marks such as the film drops.
- * FIXME: nodes_ is currently manually defined although the data is found in
- * the RaceSetup. This will be rewritten.
+ * global array rinfo_.nodes. Nodes_ contains track marks such as the film
+ * drops.
+ * FIXME: rinfo_.nodes is currently manually defined although the data is found
+ * in the RaceSetup. This will be rewritten.
  */
 function calc_poi(moments)
 {
-   for (var j = 0; j < nodes_.length; j++)
+   for (var j = 0; j < rinfo_.nodes.length; j++)
    {
       var d = {};
       var dist = 100000;
       var ix = moments.length;
       for (var i = moments.length - 1; i >= 0; i--)
       {
-         coord_diff0(moments[i], nodes_[j], d);
+         coord_diff0(moments[i], rinfo_.nodes[j], d);
          if (d.dist < dist)
          {
             dist = d.dist;
@@ -182,7 +183,7 @@ function calc_poi(moments)
 
       // Mark chosen trackpoint if distance < 100 nm. (It's assumed the the point was not reached of the distance is >100 nm.)
       if (dist < 100)
-         moments[ix].name = nodes_[j].name;
+         moments[ix].name = rinfo_.nodes[j].name;
    }
 }
 
@@ -225,12 +226,28 @@ function calc_moments(moments, t_min)
 }
  
 
+/*! Remove all track points (moments) after time of retirement.
+ */
+function remove_retired_moments(id, moments)
+{
+   for (var i = 0; i < rinfo_.retired.length; i++)
+   {
+      if (rinfo_.retired[i].id != id)
+         continue;
+
+      for (; moments.length && moments[0].at > rinfo_.retired[i].at;)
+         moments.shift();
+   }
+}
+
+
 /*! This function just calls the calculation functions above for each track.
  */
 function calc_data(setup_, data_)
 {
    for (var i = 0; i < data_.length; i++)
    {
+      remove_retired_moments(data_[i].id, data_[i].moments);
       setup_.teams[i].visible = 0;
       calc_moments(data_[i].moments, setup_.teams[i].start);
       calc_poi(data_[i].moments);
@@ -599,4 +616,16 @@ function get_data(server)
       })
    });
 }
+
+
+/*! Add all event handlers.
+ */
+function add_events()
+{
+   window.addEventListener('resize', function(e){update_graph()});
+   document.getElementById("chart").addEventListener('mousemove', function(e){mouse_move_handler(e);});
+   document.getElementById("chart").addEventListener('click', function(e){mouse_click_handler(e);});
+}
+
+window.addEventListener('load', add_events);
 
