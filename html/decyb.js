@@ -1,14 +1,29 @@
+/*! Race data viewer by Bernhard R. Fischer <bf@abenteuerland.at>
+ * This is an (almost) generic viewer of the YB race data.
+ * This version here is written specifically for the GGR2022 but it should work
+ * with any other race as well.
+ *
+ * \author Bernhard R. Fischer <bf@abenteuerland.at>
+ * \date 2022/09/28
+ */
+
 const NDIST = 20;
 const TEXTX = 80;
 const BORDER = 0.025;
+const DEFX = 1920;
+const DEFY = 1080;
 
+//! color scheme definitions
 const cscheme_ = [{bg: "#171717", cap: "#b0b0b0", xbg: "#b0b0b030", tx: "#c0c0c0"}, {bg: "#e8e8d8", cap: "#404040", xbg: "#000000b0", tx: "#e8e8e8"}];
 var cur_scheme_ = 0;
 var col_ = cscheme_[cur_scheme_];
 
 var tw_;
 
-
+/*! This function is the parser for the binary track data. The function is
+ * directly taken from the original YB code. The Github repository contains a
+ * completely rewritten and mor readable version in C by me.
+ */
 function parse(e)
 {
    for (var t = new DataView(e), i = t.getUint8(0), a = 1 === (1 & i), s = 2 === (2 & i), n = 4 === (4 & i), r = 8 === (8 & i), o = t.getUint32(1), l = 5, c = []; l < e.byteLength;) {
@@ -76,6 +91,10 @@ function fmod2(a)
 }
 
 
+/*! Calculate the orthodrome distance between to geographic coordinates src and
+ * dst defined by latitude and longitude. The result is stored as distance in
+ * nautical miles and bearing in degrees dst2.
+ */
 function coord_diff0(src, dst, dst2)
 {
    var dlat, dlon;
@@ -91,12 +110,20 @@ function coord_diff0(src, dst, dst2)
 }
 
 
+/*! This is a wrapper function for coord_diff0(). It stores the result directly
+ * into dst.
+ */
 function coord_diff(src, dst)
 {
    coord_diff0(src, dst, dst);
 }
 
 
+/*! This function finds the nearest track points to the points defined in the
+ * global array nodes_. Nodes_ contains track marks such as the film drops.
+ * FIXME: nodes_ is currently manually defined although the data is found in
+ * the RaceSetup. This will be rewritten.
+ */
 function calc_poi(moments)
 {
    for (var j = 0; j < nodes_.length; j++)
@@ -121,6 +148,11 @@ function calc_poi(moments)
 }
 
 
+/* This function does some initial calculations in the track data. It
+ * calculates the distance, the total distance, the bearing, and the average
+ * speed for each track point, and it finds the point with the highest average
+ * speed.
+ */
 function calc_moments(moments, t_min)
 {
    var ix = -1, v_avg = 0;
@@ -154,6 +186,8 @@ function calc_moments(moments, t_min)
 }
  
 
+/*! This function just calls the calculation functions above for each track.
+ */
 function calc_data(setup_, data_)
 {
    for (var i = 0; i < data_.length; i++)
@@ -165,6 +199,13 @@ function calc_data(setup_, data_)
 }
 
 
+/*! This function does a safety check, if the order of tracks and teams found
+ * in "AllPositions3" and "RaceSetup" is the same (which seams to be at the
+ * moment). Otherwise the data would have to be resorted by the "id" which
+ * identifies the data.
+ * So this function currently is for debugging. In a future release I'll
+ * directly take care on the id instead of the arrays indexes.
+ */
 function data_check(setup_, data_)
 {
    for (var i = 0; i < data_.length; i++)
@@ -173,181 +214,187 @@ function data_check(setup_, data_)
 }
 
 
-function draw_v_avg(ctx, C, moments, setup)
+/*! This function draws the average speed curves.
+ */
+function draw_v_avg(C, moments, setup)
 {
    var ix = -1;
 
-   ctx.save();
-   ctx.translate(0, C.d_max * C.sy);
-   ctx.beginPath();
-   ctx.moveTo(0, C.v_max * C.sy2);
+   C.ctx.save();
+   C.ctx.translate(0, C.d_max * C.sy);
+   C.ctx.beginPath();
+   C.ctx.moveTo(0, C.v_max * C.sy2);
    for (var i = moments.length - 1; i >= 0; i--)
    {
-      ctx.lineTo((moments[i].at - C.t_min) * C.sx, (C.v_max - moments[i].v_avg) * C.sy2);
+      C.ctx.lineTo((moments[i].at - C.t_min) * C.sx, (C.v_max - moments[i].v_avg) * C.sy2);
       if (moments[i].hasOwnProperty("v_avg_max"))
          ix = i;
    }
-   ctx.stroke();
+   C.ctx.stroke();
 
    if (ix >= 0)
    {
-      //ctx.strokeStyle = "#f00000";
-      ctx.fillStyle = "#f00000";
-      ctx.beginPath();
-      ctx.arc((moments[ix].at - C.t_min) * C.sx, (C.v_max - moments[ix].v_avg) * C.sy2, 3, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.fillText("v_avg_max = " + moments[ix].v_avg.toFixed(1), (moments[ix].at - C.t_min) * C.sx, (C.v_max - moments[ix].v_avg) * C.sy2 - 3);
+      //C.ctx.strokeStyle = "#f00000";
+      C.ctx.fillStyle = "#f00000";
+      C.ctx.beginPath();
+      C.ctx.arc((moments[ix].at - C.t_min) * C.sx, (C.v_max - moments[ix].v_avg) * C.sy2, 3, 0, 2 * Math.PI);
+      C.ctx.fill();
+      C.ctx.fillText("v_avg_max = " + moments[ix].v_avg.toFixed(1), (moments[ix].at - C.t_min) * C.sx, (C.v_max - moments[ix].v_avg) * C.sy2 - 3);
    }
-   ctx.restore();
+   C.ctx.restore();
 }
 
 
-function draw_moments(ctx, C, moments)
+/*! This function draws the distance curves.
+ */
+function draw_moments(C, moments)
 {
-   ctx.beginPath();
-   ctx.moveTo(0, C.d_max * C.sy);
+   C.ctx.beginPath();
+   C.ctx.moveTo(0, C.d_max * C.sy);
    for (var i = moments.length - 1; i >= 0; i--)
    {
       // ignore everything before race start
       if (moments[i].at < C.t_min)
          continue;
 
-      ctx.lineTo((moments[i].at - C.t_min) * C.sx, (C.d_max - moments[i].dist_tot) * C.sy);
+      C.ctx.lineTo((moments[i].at - C.t_min) * C.sx, (C.d_max - moments[i].dist_tot) * C.sy);
    }
-   ctx.stroke();
+   C.ctx.stroke();
 }
 
 
-function draw_marks(ctx, C, moments)
+/*! This function draws the tracks marks (e.g. film drops) onto the distance
+ * curves.
+ */
+function draw_marks(C, moments)
 {
    var AR = 4;
-   ctx.save();
-   ctx.fillStyle = "#d00000";
-   ctx.beginPath();
+   C.ctx.save();
+   C.ctx.fillStyle = "#d00000";
+   C.ctx.beginPath();
    for (var i = moments.length - 1; i >= 0; i--)
       if (moments[i].hasOwnProperty("name"))
       {
-         ctx.arc((moments[i].at - C.t_min) * C.sx, (C.d_max - moments[i].dist_tot) * C.sy, AR, 0, 2 * Math.PI);
-         ctx.fillText(moments[i].name, (moments[i].at - C.t_min) * C.sx, (C.d_max - moments[i].dist_tot) * C.sy - AR);
+         C.ctx.arc((moments[i].at - C.t_min) * C.sx, (C.d_max - moments[i].dist_tot) * C.sy, AR, 0, 2 * Math.PI);
+         C.ctx.fillText(moments[i].name, (moments[i].at - C.t_min) * C.sx, (C.d_max - moments[i].dist_tot) * C.sy - AR);
       }
-   ctx.fill();
-   ctx.restore();
+   C.ctx.fill();
+   C.ctx.restore();
 }
 
 
-function caption(ctx, C)
+/*! This function prints the caption of the diagram.
+ */
+function caption(C)
 {
    var text = title_.split("\n");
    var w = 0;
 
    for (var i = 0; i < text.length; i++)
-      w = Math.max(w, ctx.measureText(text[i]).width);
+      w = Math.max(w, C.ctx.measureText(text[i]).width);
 
-   ctx.save();
-   ctx.beginPath();
-   ctx.fillStyle = col_.xbg;
-   ctx.rect((C.t_max - C.t_min) * C.sx * 0.33 - 5, 0, w + 10, 20 * (text.length + .5));
-   ctx.fill();
+   C.ctx.save();
+   C.ctx.beginPath();
+   C.ctx.fillStyle = col_.xbg;
+   C.ctx.rect((C.t_max - C.t_min) * C.sx * 0.33 - 5, 0, w + 10, 20 * (text.length + .5));
+   C.ctx.fill();
 
-   ctx.beginPath();
-   ctx.fillStyle = col_.tx;
+   C.ctx.beginPath();
+   C.ctx.fillStyle = col_.tx;
    for (var i = 0; i < text.length; i++)
-      ctx.fillText(text[i], (C.t_max - C.t_min) * C.sx * 0.33, 20 * (i + 1));
-  ctx.restore();
+      C.ctx.fillText(text[i], (C.t_max - C.t_min) * C.sx * 0.33, 20 * (i + 1));
+  C.ctx.restore();
 }
 
 
-function axis(ctx, C)
+/*! This function draws the axis, grid lines, and the diagram captions.
+ */
+function axis(C)
 {
    const XDIFF = 20;
    const YDIFF = 20;
 
-   ctx.save();
-   ctx.fillStyle = col_.cap;
-   ctx.strokeStyle = col_.cap;
-   ctx.lineWidth = 1;
-   ctx.setLineDash([6,4]);
+   C.ctx.save();
+   C.ctx.fillStyle = col_.cap;
+   C.ctx.strokeStyle = col_.cap;
+   C.ctx.lineWidth = 1;
+   C.ctx.setLineDash([6,4]);
 
    // x axis
-   ctx.save();
-   ctx.translate(0, C.d_max * C.sy);
+   C.ctx.save();
+   //C.ctx.translate(0, C.d_max * C.sy);
    var t_diff = (C.t_max - C.t_min) / XDIFF;
    for (var t = C.t_min, td = new Date(); t < C.t_max ; t += t_diff)
    {
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(0, -C.d_max * C.sy);
-      ctx.stroke();
+      C.ctx.beginPath();
+      C.ctx.moveTo(0, 0);
+      C.ctx.lineTo(0, C.height /*-C.d_max * C.sy*/);
+      C.ctx.stroke();
       td.setTime(t * 1000);
-      ctx.save();
-      ctx.rotate(-Math.PI / 2);
-      ctx.fillText(td.toUTCString(), 30, 0);
-      ctx.restore();
-      ctx.translate(t_diff * C.sx, 0);
+      C.ctx.save();
+      C.ctx.translate(0, C.height * 0.7);
+      C.ctx.rotate(-Math.PI / 2);
+      C.ctx.fillText(td.toUTCString(), 0, -4);
+      C.ctx.restore();
+      C.ctx.translate(t_diff * C.sx, 0);
    }
-   ctx.restore();
+   C.ctx.restore();
 
-   ctx.save();
-   ctx.translate(0, C.d_max * C.sy);
+   C.ctx.save();
+   C.ctx.translate(0, C.d_max * C.sy);
    var d_diff = C.d_max / YDIFF;
    for (var d = 0; d < C.d_max; d += d_diff)
    {
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo((C.t_max - C.t_min) * C.sx, 0);
-      ctx.stroke();
+      C.ctx.beginPath();
+      C.ctx.moveTo(0, 0);
+      C.ctx.lineTo((C.t_max - C.t_min) * C.sx, 0);
+      C.ctx.stroke();
       var ds = d.toFixed(0) + " nm";
-      ctx.fillText(ds, 0, 0);
-      ctx.translate(0, -d_diff * C.sy);
+      C.ctx.fillText(ds, 0, 0);
+      C.ctx.translate(0, -d_diff * C.sy);
    }
-   ctx.restore();
+   C.ctx.restore();
 
-   ctx.save();
-   ctx.translate(0, C.d_max * C.sy + C.v_max * C.sy2);
+   C.ctx.save();
+   C.ctx.translate(0, C.d_max * C.sy + C.v_max * C.sy2);
    var v_diff = C.v_max / 10;
    for (var v = 0; v < C.v_max; v += v_diff)
    {
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo((C.t_max - C.t_min) * C.sx, 0);
-      ctx.stroke();
+      C.ctx.beginPath();
+      C.ctx.moveTo(0, 0);
+      C.ctx.lineTo((C.t_max - C.t_min) * C.sx, 0);
+      C.ctx.stroke();
       var vs = v.toFixed(0) + " kts";
-      ctx.fillText(vs, 0, 0);
-      ctx.translate(0, -v_diff * C.sy2);
+      C.ctx.fillText(vs, 0, 0);
+      C.ctx.translate(0, -v_diff * C.sy2);
    }
-   ctx.restore();
+   C.ctx.restore();
 
-   ctx.restore();
+   C.ctx.restore();
 }
 
 
-function measure_names(ctx, setup_, data_)
+/*! This helper function determins the maximum width of the name box.
+ */
+function measure_names(C, setup_, data_)
 {
    var w = 0;
-   ctx.save();
-   ctx.font = "bold 14px sans-serif";
+   C.ctx.save();
+   C.ctx.font = "bold 14px sans-serif";
    for (var i = 0; i < data_.length; i++)
    {
       var v_avg = data_[i].moments[0].dist_tot * 3600 / (data_[i].moments[0].at - data_[i].moments[data_[i].moments.length - 1].at);
-      w = Math.max(w, ctx.measureText(setup_.teams[i].name + ", dist = " + data_[i].moments[0].dist_tot.toFixed(1) + ", v_avg = " + v_avg.toFixed(2)).width);
+      w = Math.max(w, C.ctx.measureText(setup_.teams[i].name + ", dist = " + data_[i].moments[0].dist_tot.toFixed(1) + ", v_avg = " + v_avg.toFixed(2)).width);
    }
-   ctx.restore();
+   C.ctx.restore();
    return w;
 }
 
 
+/*! This function is the main drawing function and draws the complete diagram.
+ */
 function draw_data(setup_, data_)
 {
-   //data_check(setup_, data_);
-   document.body.style.backgroundColor = col_.bg;
-   var canvas = document.getElementById("chart");
-   var ctx = canvas.getContext("2d");
-   var width = canvas.width = window.innerWidth;
-   var height = canvas.height = window.innerHeight;
-
-   ctx.translate(width * BORDER, height * BORDER);
-   //ctx.scale(0.95, 0.95);
-
    // drawing parameters
    var C =
       {
@@ -358,7 +405,19 @@ function draw_data(setup_, data_)
          sx: 0,
          sy: 0,
          sy2: 0,
+         width: DEFX,
+         height:DEFY 
       };
+
+   data_check(setup_, data_);
+   document.body.style.backgroundColor = col_.bg;
+   var canvas = document.getElementById("chart");
+   C.ctx = canvas.getContext("2d");
+   C.width = canvas.width = window.innerWidth;
+   C.height = canvas.height = window.innerHeight;
+
+   C.ctx.translate(C.width * BORDER, C.height * BORDER);
+   //C.ctx.scale(0.95, 0.95);
 
    C.t_min = setup_.teams[0].start;
    for (var i = 0; i < data_.length; i++)
@@ -369,55 +428,59 @@ function draw_data(setup_, data_)
    }
 
    var ysplit = 0.8;
-   C.sx = width / (C.t_max - C.t_min) * (1 - 2 * BORDER);
-   C.sy = height / C.d_max * ysplit * (1 - 2 * BORDER);
-   C.sy2 = height / C.v_max * (1 - ysplit) * (1 - 2 * BORDER);
+   C.sx = C.width / (C.t_max - C.t_min) * (1 - 2 * BORDER);
+   C.sy = C.height / C.d_max * ysplit * (1 - 2 * BORDER);
+   C.sy2 = C.height / C.v_max * (1 - ysplit) * (1 - 2 * BORDER);
 
-   ctx.lineWidth = 1;
-   ctx.font = "14px sans-serif";
+   C.ctx.lineWidth = 1;
+   C.ctx.font = "14px sans-serif";
 
-   axis(ctx, C);
-   caption(ctx, C);
+   axis(C);
+   caption(C);
 
-   tw_ = measure_names(ctx, setup_, data_);
+   tw_ = measure_names(C, setup_, data_);
 
-   ctx.fillStyle = col_.xbg;
-   ctx.rect(TEXTX - 10, 0, tw_, data_.length * NDIST + 10);
-   ctx.fill();
+   C.ctx.fillStyle = col_.xbg;
+   C.ctx.rect(TEXTX - 10, 0, tw_, data_.length * NDIST + 10);
+   C.ctx.fill();
 
    for (var i = 0; i < data_.length; i++)
    {
-      //if (data_[i].id != 3) continue;
-      if (_a == i /*|| setup_.teams[i].visible*/)
+      if (_a == i || setup_.teams[i].visible)
       {
          o = "ff";
-         ctx.lineWidth = 3;
-         ctx.font = "bold 14px sans-serif";
+         C.ctx.font = "bold 14px sans-serif";
       }
       else
       {
          o = "e0";
-         ctx.lineWidth = 1;
-         ctx.font = "14px sans-serif";
+         C.ctx.font = "14px sans-serif";
       }
-      ctx.strokeStyle = "#" + setup_.teams[i].colour + o;
-      ctx.fillStyle = "#" + setup_.teams[i].colour + o;
+      C.ctx.lineWidth = _a == i ? 3 : 1;
+      C.ctx.strokeStyle = "#" + setup_.teams[i].colour + o;
+      C.ctx.fillStyle = "#" + setup_.teams[i].colour + o;
 
       var v_avg = data_[i].moments[0].dist_tot * 3600 / (data_[i].moments[0].at - data_[i].moments[data_[i].moments.length - 1].at);
-      ctx.fillText(setup_.teams[i].name + ", dist = " + data_[i].moments[0].dist_tot.toFixed(1) + ", v_avg = " + v_avg.toFixed(2), TEXTX, (i+1) * NDIST);
+      C.ctx.fillText(setup_.teams[i].name + ", dist = " + data_[i].moments[0].dist_tot.toFixed(1) + ", v_avg = " + v_avg.toFixed(2), TEXTX, (i+1) * NDIST);
 
       if (!setup_.teams[i].visible && _a != i)
          continue;
 
-      draw_moments(ctx, C, data_[i].moments);
-      draw_marks(ctx, C, data_[i].moments);
-      draw_v_avg(ctx, C, data_[i].moments);
+      draw_moments(C, data_[i].moments);
+      draw_marks(C, data_[i].moments);
+      draw_v_avg(C, data_[i].moments);
    }
 }
 
-
+// some global variables (_s: RaceSetup, _j: AllPositions3, _a: mouse over name index
+// FIXME: I hate this, but due to a lack of understanding of the fetch/then
+// construction I was yet unable to write this in a proper manner.
 var _s, _j, _a = -1;
 
+
+/*! This function determines the current mouse position of an event and detects
+ * if the mouse is hovered over a participant, and which index it is.
+ */
 function handle_mouse_pos(e)
 {
    var mx = e.pageX - document.getElementById("chart").getBoundingClientRect().left;
@@ -428,12 +491,20 @@ function handle_mouse_pos(e)
    _a = mx >= x + TEXTX && mx < x + TEXTX + tw_ && my >= y && my < _j.length * NDIST + y ? Math.floor((my - y) / NDIST) : -1;
 }
 
+
+/*! The mouse move handler is called every time when the mouse is moved.
+ */
 function mouse_move_handler(e)
 {
    handle_mouse_pos(e);
    update_graph();
 }
 
+
+/*! The mouse click handler is called at every mouse click. It enables/disables
+ * the chosen curves by setting the visibility member.
+ * Otherwise it switches the color scheme.
+ */
 function mouse_click_handler(e)
 {
    handle_mouse_pos(e);
@@ -450,6 +521,9 @@ function mouse_click_handler(e)
 }
 
 
+/*! This helper function puts the loaded data from the network into the global
+ * variables.
+ */
 function save_data(setup, jdata)
 {
    _s = setup;
@@ -457,12 +531,17 @@ function save_data(setup, jdata)
 }
 
 
+/*! This function is a wrapper for draw_data(). It is called by the window
+ * resize event.
+ */
 function update_graph()
 {
    draw_data(_s, _j);
 }
 
 
+/*! This function initially fetches the race data from the YB server.
+ */
 function get_data(server)
 {
    fetch('https://' + server + '/JSON/ggr2022/RaceSetup')
@@ -472,13 +551,9 @@ function get_data(server)
       .then((response) => response.arrayBuffer())
       .then((data) => {
          var jdata = parse(data);
-         //console.log(jdata);
-         //console.log(setup);
-
          save_data(setup, jdata);
          calc_data(setup, jdata);
          //document.getElementById("pre").innerHTML = JSON.stringify(jdata, null, 2);
-         //draw_data(setup, jdata);
          update_graph();
       })
    });
