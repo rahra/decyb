@@ -7,7 +7,7 @@ IOS the follow the races.
 
 This repo contains my own viewer for the data written in JS (see directory
 "html"), as well as a command line version written in C (see directory "cli").
-The latter contains a shell script which lets your download and decode all data
+The latter contains a shell script which lets you download and decode all data
 into JSON files for your own further processing.
 
 This software is written specifically for the Golden Globe Race 2022 (see
