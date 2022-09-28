@@ -1,4 +1,4 @@
-# Decoder and Data View for YB Race Data
+# Decoder and Data Viewer for YB Race Data
 
 This is decoder and viewer for the YB race data.
 YB (https://www.ybtracking.com/) is a commonly used software for tracking boat
