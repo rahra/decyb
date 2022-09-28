@@ -119,6 +119,45 @@ function coord_diff(src, dst)
 }
 
 
+const LON = 0x01;
+const LAT = 0x00;
+const MIN = 0x02;
+const DEC = 0x04;
+
+/*! Format number into nautical coordinate format.
+ */
+function coord_str(pos, flags)
+{
+   var ipos = Math.floor(pos);
+   var dec = ((pos - Math.floor(pos)) * 60).toFixed(flags & DEC ? 1 : 0);
+   var dir;
+   var pad;
+
+   if (flags)
+   {
+      dir = pos < 0 ? 'W' : 'E';
+      pad = pos < 10 ? '00' : (pos < 100 ? '0' : '');
+   }
+   else
+   {
+      dir = pos < 0 ? 'S' : 'N';
+      pad = pos < 10 ? '0' : '';
+   }
+
+   return pad + ipos + '° ' + (flags & MIN ? (dec < 10 ? '0' : '') + dec : '') + (pos != 0.0 ? dir : '');;
+}
+
+
+/*! Find if a boat passes a specific latitude.
+ */
+function find_pass_lat(moments, lat)
+{
+   for (var i = moments.length - 1; i > 0; i--)
+      if ((moments[i].lat >= lat && moments[i - 1].lat < lat) || (moments[i].lat <= lat && moments[i - 1].lat > lat))
+         moments[i].name = coord_str(lat, LAT);
+}
+
+
 /*! This function finds the nearest track points to the points defined in the
  * global array nodes_. Nodes_ contains track marks such as the film drops.
  * FIXME: nodes_ is currently manually defined although the data is found in
@@ -131,7 +170,7 @@ function calc_poi(moments)
       var d = {};
       var dist = 100000;
       var ix = moments.length;
-      for (var i = 0; i < moments.length; i++)
+      for (var i = moments.length - 1; i >= 0; i--)
       {
          coord_diff0(moments[i], nodes_[j], d);
          if (d.dist < dist)
@@ -195,6 +234,8 @@ function calc_data(setup_, data_)
       setup_.teams[i].visible = 0;
       calc_moments(data_[i].moments, setup_.teams[i].start);
       calc_poi(data_[i].moments);
+      // find passing of equator
+      find_pass_lat(data_[i].moments, 0);
    }
 }
 
@@ -271,14 +312,14 @@ function draw_marks(C, moments)
    var AR = 4;
    C.ctx.save();
    C.ctx.fillStyle = "#d00000";
-   C.ctx.beginPath();
    for (var i = moments.length - 1; i >= 0; i--)
       if (moments[i].hasOwnProperty("name"))
       {
+         C.ctx.beginPath();
          C.ctx.arc((moments[i].at - C.t_min) * C.sx, (C.d_max - moments[i].dist_tot) * C.sy, AR, 0, 2 * Math.PI);
+         C.ctx.fill();
          C.ctx.fillText(moments[i].name, (moments[i].at - C.t_min) * C.sx, (C.d_max - moments[i].dist_tot) * C.sy - AR);
       }
-   C.ctx.fill();
    C.ctx.restore();
 }
 
