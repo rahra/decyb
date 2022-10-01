@@ -202,21 +202,26 @@ function calc_moments(moments, t_min)
    for (var i = moments.length - 1; i; i--)
    {
       // ignore data before start of race
-      if (moments[i - 1].at <= t_min)
+      if (moments[i - 1].hasOwnProperty("at") && moments[i - 1].at <= t_min)
       {
          moments[i - 1].td = moments[i - 1].dist = moments[i - 1].dist_tot = 0;
          continue;
       }
+
       coord_diff(moments[i], moments[i - 1]);
       moments[i - 1].dist_tot = moments[i - 1].dist + moments[i].dist_tot;
-      moments[i - 1].td = moments[i - 1].at - moments[i].at;
-      moments[i - 1].v_avg = moments[i - 1].td ? moments[i - 1].dist / moments[i - 1].td * 3600 : 0;
 
-      // find max avg speed
-      if (moments[i - 1].v_avg > v_avg)
+      if (moments[i - 1].hasOwnProperty("at"))
       {
-         v_avg = moments[i - 1].v_avg;
-         ix = i - 1;
+         moments[i - 1].td = moments[i - 1].at - moments[i].at;
+         moments[i - 1].v_avg = moments[i - 1].td ? moments[i - 1].dist / moments[i - 1].td * 3600 : 0;
+
+         // find max avg speed
+         if (moments[i - 1].v_avg > v_avg)
+         {
+            v_avg = moments[i - 1].v_avg;
+            ix = i - 1;
+         }
       }
    }
 
@@ -299,6 +304,30 @@ function draw_v_avg(C, moments, setup)
       C.ctx.fill();
       C.ctx.fillText("v_avg_max = " + moments[ix].v_avg.toFixed(1), (moments[ix].at - C.t_min) * C.sx, (C.v_max - moments[ix].v_avg) * C.sy2 - 3);
    }
+   C.ctx.restore();
+}
+
+
+function draw_moments_map(C, moments)
+{
+   C.ctx.save();
+   C.ctx.translate(C.width / 2, C.height / 2);
+   C.ctx.rotate(Math.PI / 8);
+ 
+   C.ctx.beginPath();
+   //C.ctx.moveTo(0, C.d_max * C.sy);
+   for (var i = moments.length - 1; i >= 0; i--)
+   {
+      // ignore everything before race start
+      if (moments[i].at < C.t_min)
+         continue;
+
+      var tc = trans_spilhaus({lat: moments[i].lat, lon: moments[i].lon});
+      var xy = coords_xy(C.width, tc);
+
+      C.ctx.lineTo(xy.x - C.width/2, xy.y - C.width/2);
+   }
+   C.ctx.stroke();
    C.ctx.restore();
 }
 
@@ -449,6 +478,118 @@ function measure_names(C, setup_, data_)
 }
 
 
+function lonmod(lon)
+{
+   while (lon < -180)
+      lon += 360;
+   while (lon > 180)
+      lon -= 360;
+   return lon;
+}
+
+
+function transcoord(theta, phi, lat0, lon0)
+{
+   var lat, lon;
+
+   lat0 = DEG2RAD(lat0);
+   lon0 = DEG2RAD(lon0);
+   theta = DEG2RAD(theta);
+   phi = DEG2RAD(phi);
+
+   lat = Math.asin(Math.cos(theta) * Math.sin(lat0) - Math.cos(lon0) * Math.sin(theta) * Math.cos(lat0));
+   lon = Math.atan2(Math.sin(lon0), Math.tan(lat0) * Math.sin(theta) + Math.cos(lon0) * Math.cos(theta)) - phi;
+
+   lat0 = RAD2DEG(lat);
+   lon0 = lonmod(RAD2DEG(lon));
+
+   return {lat: lat0, lon: lon0};
+}
+
+
+function trans_spilhaus(tc)
+{
+   var trans = [
+      {tlat: 0, tlon: 66.94970198},
+      {tlat: 40.43628322, tlon: 0},
+      {tlat: 0, tlon: 40.18},
+      {tlat: -90, tlon: 0},
+      ];
+   for (var i = 0; i < trans.length; i++)
+      tc = transcoord(trans[i].tlat, trans[i].tlon, tc.lat, tc.lon);
+
+   return tc;
+}
+
+
+function coords_xy(s, tc)
+{
+  /*
+   return {x: (lon + 180) * C.width / 360,
+      y: C.height * (0.5 - (Math.asinh(Math.tan(DEG2RAD(lat))) - 0) / 6)};
+      */
+   var xy = adams_square_ii(DEG2RAD(tc.lon), DEG2RAD(tc.lat));
+   xy.x = ((xy.x + A2_LAM_SCALE) * s) / (2 * A2_LAM_SCALE);
+   xy.y = s - ((xy.y + A2_PHI_SCALE) * s) / (2 * A2_PHI_SCALE);
+   return xy;
+}
+
+
+function calc_chart()
+{
+   var s = 1;
+
+   for (i = 0; i < c_.length; i++)
+   {
+      var olon;
+      for (j = 0; j < c_[i].nodes.length; j++)
+      {
+         var tc = trans_spilhaus({lat: c_[i].nodes[j].N, lon: c_[i].nodes[j].E});
+         var xy = coords_xy(s, tc);
+         c_[i].nodes[j].x = xy.x;
+         c_[i].nodes[j].y = xy.y;
+         c_[i].nodes[j].split = 0;
+         if (j)
+         {
+            var dlon = tc.lon - olon;
+            olon = tc.lon;
+            if (Math.abs(dlon) > 180)
+               c_[i].nodes[j].split = 1;
+         }
+      }
+   }
+}
+
+
+function draw_map(C)
+{
+   var s = C.width;
+
+   C.ctx.save();
+   C.ctx.translate(C.width / 2, C.height / 2);
+   C.ctx.rotate(Math.PI / 8);
+   C.ctx.strokeStyle = "#801000";
+   C.ctx.lineWidth = 2;
+   for (i = 0; i < c_.length; i++)
+   //for (i = 0; i < 26; i++)
+   {
+      C.ctx.beginPath();
+      var olon;
+      for (j = 0; j < c_[i].nodes.length; j++)
+      {
+         if (c_[i].nodes[j].split)
+         {
+            C.ctx.stroke();
+            C.ctx.beginPath();
+         }
+         C.ctx.lineTo(c_[i].nodes[j].x*s - s/2, c_[i].nodes[j].y*s - s/2);
+      }
+      C.ctx.stroke();
+   }
+   C.ctx.restore();
+}
+
+
 /*! This function is the main drawing function and draws the complete diagram.
  */
 function draw_data(setup_, data_)
@@ -493,6 +634,7 @@ function draw_data(setup_, data_)
    C.ctx.lineWidth = 1;
    C.ctx.font = "14px sans-serif";
 
+   draw_map(C);
    axis(C);
    caption(C);
 
@@ -525,10 +667,13 @@ function draw_data(setup_, data_)
          continue;
 
       draw_moments(C, data_[i].moments);
+      draw_moments_map(C, data_[i].moments);
       draw_marks(C, data_[i].moments);
       draw_v_avg(C, data_[i].moments);
    }
 }
+
+
 
 // some global variables (_s: RaceSetup, _j: AllPositions3, _a: mouse over name index
 // FIXME: I hate this, but due to a lack of understanding of the fetch/then
@@ -610,6 +755,8 @@ function get_data(server)
       .then((data) => {
          var jdata = parse(data);
          save_data(setup, jdata);
+         calc_moments(setup.course.nodes, 0);
+         //console.log(setup.course);
          calc_data(setup, jdata);
          //document.getElementById("pre").innerHTML = JSON.stringify(jdata, null, 2);
          update_graph();
@@ -622,6 +769,7 @@ function get_data(server)
  */
 function add_events()
 {
+   calc_chart();
    window.addEventListener('resize', function(e){update_graph()});
    document.getElementById("chart").addEventListener('mousemove', function(e){mouse_move_handler(e);});
    document.getElementById("chart").addEventListener('click', function(e){mouse_click_handler(e);});
