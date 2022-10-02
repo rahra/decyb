@@ -60,6 +60,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <endian.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 
 typedef struct moment
@@ -224,13 +226,30 @@ int PositionParser(const char *buf, int len)
 }
 
 
+#define BLOCKSIZE 65536
+
 int main(int argc, char **argv)
 {
-   char buf[100000];
-   int len;
+   char *buf;
+   int fd = 0, len, rlen;
 
-   len = read(0, buf, sizeof(buf));
+   if (argc > 1 && (fd = open(argv[1], O_RDONLY)) == -1)
+      perror("open() failed"), exit(1);
+
+   for (buf = NULL, len = 0, rlen = 1; rlen;)
+   {
+      if ((buf = realloc(buf, len + BLOCKSIZE)) == NULL)
+         perror("realloc() failed"), exit(1);
+
+      if ((rlen = read(fd, &buf[len], BLOCKSIZE)) == -1)
+         perror("read(0) failed"), exit(1);
+
+      len += rlen;
+   }
+
    PositionParser(buf, len);
+   free(buf);
+   close(fd);
 
    return 0;
 }
