@@ -188,6 +188,28 @@ function calc_poi(moments)
 }
 
 
+/*! This function returns to current time as a Unix timestamp in seconds.
+ */
+function time()
+{
+   return Math.floor(Date.now() / 1000);
+}
+
+
+/*! This function eliminates moments which happen in the future (according to
+ * the timestamp) or which occured before the start of the race.
+ */
+function clean_moments(moments, t_min)
+{
+   // remove elements before the start
+   for (; moments.slice(-1)[0].at < t_min;)
+      moments.pop();
+   // remove elements which are in the future
+   for (; moments[0].at > time();)
+      moments.shift();
+}
+
+
 /* This function does some initial calculations in the track data. It
  * calculates the distance, the total distance, the bearing, and the average
  * speed for each track point, and it finds the point with the highest average
@@ -201,13 +223,6 @@ function calc_moments(moments, t_min)
    moments[moments.length - 1].td = moments[moments.length - 1].dist = moments[moments.length - 1].dist_tot = 0;
    for (var i = moments.length - 1; i; i--)
    {
-      // ignore data before start of race
-      if (moments[i - 1].hasOwnProperty("at") && moments[i - 1].at <= t_min)
-      {
-         moments[i - 1].td = moments[i - 1].dist = moments[i - 1].dist_tot = 0;
-         continue;
-      }
-
       coord_diff(moments[i], moments[i - 1]);
       moments[i - 1].dist_tot = moments[i - 1].dist + moments[i].dist_tot;
 
@@ -252,6 +267,7 @@ function calc_data(setup_, data_)
 {
    for (var i = 0; i < data_.length; i++)
    {
+      clean_moments(data_[i].moments, setup_.teams[i].start);
       remove_retired_moments(data_[i].id, data_[i].moments);
       setup_.teams[i].visible = 0;
       calc_moments(data_[i].moments, setup_.teams[i].start);
@@ -743,6 +759,16 @@ function update_graph()
 }
 
 
+function prep_vdh()
+{
+   const diff = 1662300000 - 1530439200;
+   for (var i = 0; i < vdhd_.moments.length; i++)
+      vdhd_.moments[i].at += diff;
+   _j.push(vdhd_);
+   _s.teams.push(vdhs_);
+}
+
+
 /*! This function initially fetches the race data from the YB server.
  */
 function get_data(server)
@@ -755,6 +781,7 @@ function get_data(server)
       .then((data) => {
          var jdata = parse(data);
          save_data(setup, jdata);
+         prep_vdh();
          calc_moments(setup.course.nodes, 0);
          //console.log(setup.course);
          calc_data(setup, jdata);
