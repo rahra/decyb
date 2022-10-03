@@ -334,10 +334,6 @@ function draw_moments_map(C, moments)
    //C.ctx.moveTo(0, C.d_max * C.sy);
    for (var i = moments.length - 1; i >= 0; i--)
    {
-      // ignore everything before race start
-      if (moments[i].at < C.t_min)
-         continue;
-
       var tc = trans_spilhaus({lat: moments[i].lat, lon: moments[i].lon});
       var xy = coords_xy(C.width, tc);
 
@@ -504,6 +500,10 @@ function lonmod(lon)
 }
 
 
+/*! This function rotates a geographic location given by lat0/lon0 in a
+ * 3-dimensional reference system by the angles theta and phi along the x and y
+ * axis.
+ */
 function transcoord(theta, phi, lat0, lon0)
 {
    var lat, lon;
@@ -523,6 +523,8 @@ function transcoord(theta, phi, lat0, lon0)
 }
 
 
+/*! This translates the coordinate tc to the Spilhaus reference system.
+ */
 function trans_spilhaus(tc)
 {
    var trans = [
@@ -538,12 +540,11 @@ function trans_spilhaus(tc)
 }
 
 
+/*! This is the final step of the Adams Square II projection to scale the x/y
+ * coordinates to the square plane.
+ */
 function coords_xy(s, tc)
 {
-  /*
-   return {x: (lon + 180) * C.width / 360,
-      y: C.height * (0.5 - (Math.asinh(Math.tan(DEG2RAD(lat))) - 0) / 6)};
-      */
    var xy = adams_square_ii(DEG2RAD(tc.lon), DEG2RAD(tc.lat));
    xy.x = ((xy.x + A2_LAM_SCALE) * s) / (2 * A2_LAM_SCALE);
    xy.y = s - ((xy.y + A2_PHI_SCALE) * s) / (2 * A2_PHI_SCALE);
@@ -551,17 +552,19 @@ function coords_xy(s, tc)
 }
 
 
+/*! This function calculates the x/y coordinates of each map point. It's done
+ * by translate each geographic coordinate into the Spilhaus reference system
+ * and then applying the Adams Square II projection.
+ */
 function calc_chart()
 {
-   var s = 1;
-
    for (i = 0; i < c_.length; i++)
    {
       var olon;
       for (j = 0; j < c_[i].nodes.length; j++)
       {
          var tc = trans_spilhaus({lat: c_[i].nodes[j].N, lon: c_[i].nodes[j].E});
-         var xy = coords_xy(s, tc);
+         var xy = coords_xy(1, tc);
          c_[i].nodes[j].x = xy.x;
          c_[i].nodes[j].y = xy.y;
          c_[i].nodes[j].split = 0;
@@ -577,6 +580,32 @@ function calc_chart()
 }
 
 
+/*! Add grid lines (equator and meridian) to the chart data in real geographic
+ * coordinates.
+ */
+function gen_grid()
+{
+   var eq;
+
+   eq = {type: "way", tags: {type: "equator"}, nodes: []};
+   for (var e = -180; e <= 180; e += 10)
+      eq.nodes.push({N: 0, E: e});
+   c_.push(eq);
+
+   eq = {type: "way", tags: {type: "meridian"}, nodes: []};
+   for (var n = -90; n <= 90; n += 10)
+      eq.nodes.push({N: n, E: 0});
+   for (; n >= -90; n -= 10)
+      eq.nodes.push({N: n, E: 180});
+   c_.push(eq);
+}
+
+
+/*! This function plots the map having the coordinates x/y of each point
+ * already pre-calculated (done in calc_chart()). It also does the final 45
+ * degree rotation to Adams Square II projected coordinates to resemble the
+ * Spilhaus projection.
+ */
 function draw_map(C)
 {
    var s = C.width;
@@ -584,11 +613,10 @@ function draw_map(C)
    C.ctx.save();
    C.ctx.translate(C.width / 2, C.height / 2);
    C.ctx.rotate(Math.PI / 8);
-   C.ctx.strokeStyle = "#801000";
    C.ctx.lineWidth = 2;
    for (i = 0; i < c_.length; i++)
-   //for (i = 0; i < 26; i++)
    {
+      C.ctx.strokeStyle = c_[i].tags.type == "meridian" || c_[i].tags.type == "equator" ? "#606000" : "#801000";
       C.ctx.beginPath();
       var olon;
       for (j = 0; j < c_[i].nodes.length; j++)
@@ -787,6 +815,7 @@ function get_data(server)
    .then((bindata) => parse(bindata))
    .then((data) => {
       save_data(setup, data);
+      gen_grid();
       calc_chart();
       prep_vdh(setup, data);
       calc_moments(setup.course.nodes, 0);
