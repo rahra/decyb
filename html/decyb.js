@@ -759,13 +759,16 @@ function update_graph()
 }
 
 
-function prep_vdh()
+/*! This function corrects to timestamps of the VDH track to the current race
+ * and adds to track to the ggr2022 race data.
+ */
+function prep_vdh(setup, data)
 {
    const diff = 1662300000 - 1530439200;
    for (var i = 0; i < vdhd_.moments.length; i++)
       vdhd_.moments[i].at += diff;
-   _j.push(vdhd_);
-   _s.teams.push(vdhs_);
+   data.push(vdhd_);
+   setup.teams.push(vdhs_);
 }
 
 
@@ -773,21 +776,25 @@ function prep_vdh()
  */
 function get_data(server)
 {
+   fetch('https://' + server + '/JSON/ggr2022/leaderboard')
+   .then((response) => response.json())
+   .then((board) => {
    fetch('https://' + server + '/JSON/ggr2022/RaceSetup')
    .then((response) => response.json())
-   .then((setup) => {
-      fetch('https://' + server + '/BIN/ggr2022/AllPositions3')
-      .then((response) => response.arrayBuffer())
-      .then((data) => {
-         var jdata = parse(data);
-         save_data(setup, jdata);
-         prep_vdh();
-         calc_moments(setup.course.nodes, 0);
-         //console.log(setup.course);
-         calc_data(setup, jdata);
-         //document.getElementById("pre").innerHTML = JSON.stringify(jdata, null, 2);
-         update_graph();
-      })
+   .then(function(setup) {
+   fetch('https://' + server + '/BIN/ggr2022/AllPositions3')
+   .then((response) => response.arrayBuffer())
+   .then((bindata) => parse(bindata))
+   .then((data) => {
+      save_data(setup, data);
+      calc_chart();
+      prep_vdh(setup, data);
+      calc_moments(setup.course.nodes, 0);
+      calc_data(setup, data);
+      //document.getElementById("pre").innerHTML = JSON.stringify(jdata, null, 2);
+      update_graph();
+   })
+   })
    });
 }
 
@@ -796,7 +803,6 @@ function get_data(server)
  */
 function add_events()
 {
-   calc_chart();
    window.addEventListener('resize', function(e){update_graph()});
    document.getElementById("chart").addEventListener('mousemove', function(e){mouse_move_handler(e);});
    document.getElementById("chart").addEventListener('click', function(e){mouse_click_handler(e);});
