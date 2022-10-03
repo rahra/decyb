@@ -787,8 +787,9 @@ function update_graph()
 }
 
 
-/*! This function corrects to timestamps of the VDH track to the current race
+/*! This function corrects the timestamps of the VDH track to the current race
  * and adds to track to the ggr2022 race data.
+ * FIXME: This code should go into another file since it is GGR-specific.
  */
 function prep_vdh(setup, data)
 {
@@ -801,6 +802,7 @@ function prep_vdh(setup, data)
 
 
 /*! This function initially fetches the race data from the YB server.
+ * FIXME: The subpath "ggr2022" should be replaced by a variable.
  */
 function get_data(server)
 {
