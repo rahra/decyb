@@ -1,3 +1,15 @@
+/*! This file contains the code for the Adams Square II projection.
+ * I took it directly from my chart renderer "Smrender"
+ * (https://github.com/rahra/smrender) and translated it back from C to JS.
+ * Originally, I ported the code from Torben Janson (see below) to C to include
+ * it in Smrender.
+ * Thanks again to Torben for his effort then!
+ *
+ * \file adams.js
+ * \author Bernhard R. Fischer <bf@abenteuerland.at>
+ * \date 2022/10/04
+ */
+
 const M_PI_2 = Math.PI / 2;
 const C1 = 1e-3;
 const C2  = 1e-9;
