@@ -145,10 +145,74 @@ function clean_moments(moments, t_min)
 }
 
 
+/*! This function calculates the distance and bearing of the basic intend
+ * course to go. The track points are ordered ascendingly in the RaceSetup
+ * data.
+ */
+function calc_course(moments)
+{
+   var dst = {bearing: 0, dist: 0};
+   moments[0].dist = moments[0].dist_tot = moments[0].bearing = 0;
+   for (var i = 0; i < moments.length - 1; i++)
+   {
+      coord_diff0(moments[i], moments[i + 1], dst);
+      moments[i].bearing = dst.bearing;
+      moments[i + 1].dist = dst.dist;
+      moments[i + 1].dist_tot = moments[i].dist_tot + dst.dist;
+   }
+   console.log(moments);
+}
+
+
+/*! Calculate the difference between 2 bearings (0 - 360).
+ * @return The function always returns a value -180 <= v <= 180.
+ */
+function diff_bearing(bear_mom, bear_course)
+{
+   var b = bear_mom - bear_course;
+   return b > 180 ? b - 360 : b;
+}
+
+
+/*! The function calculates if a bearing calculate from a moment does not
+ * deviate more than 90 degrees to starboard (+90) or portside (-90).
+ */
+function coursepoint_in_sight(bear_mom, bear_course)
+{
+   var v = diff_bearing(bear_mom, bear_course);
+   return v < 90 && v > -90;
+}
+
+
+/*! This function calculates the DMG and the DTF for every moment of each
+ * participant's track.
+ */
+function calc_dtf(moments, course)
+{
+   var dist_tot = course[course.length - 1].dist_tot;
+   var dst = {};
+   var i = moments.length - 1;
+   for (var j = 0; j < course.length && i < moments.length; j++)
+   {
+      for (; i >= 0; i--)
+      {
+         coord_diff0(moments[i], course[j], dst);
+         if (!coursepoint_in_sight(dst.bearing, course[j].bearing))
+            break;
+         moments[i].dtf = dist_tot - course[j].dist_tot + dst.dist;
+         moments[i].dmg = course[j].dist_tot - dst.dist;
+      }
+   }
+   console.log(moments);
+}
+
+
 /* This function does some initial calculations in the track data. It
  * calculates the distance, the total distance, the bearing, and the average
  * speed for each track point, and it finds the point with the highest average
  * speed.
+ * The trackpoints are ordered descendingly, so the latest point in time is the
+ * first point in the arrays.
  */
 function calc_moments(moments, t_min)
 {
@@ -161,17 +225,14 @@ function calc_moments(moments, t_min)
       coord_diff(moments[i], moments[i - 1]);
       moments[i - 1].dist_tot = moments[i - 1].dist + moments[i].dist_tot;
 
-      if (moments[i - 1].hasOwnProperty("at"))
-      {
-         moments[i - 1].td = moments[i - 1].at - moments[i].at;
-         moments[i - 1].v_avg = moments[i - 1].td ? moments[i - 1].dist / moments[i - 1].td * 3600 : 0;
+      moments[i - 1].td = moments[i - 1].at - moments[i].at;
+      moments[i - 1].v_avg = moments[i - 1].td ? moments[i - 1].dist / moments[i - 1].td * 3600 : 0;
 
-         // find max avg speed
-         if (moments[i - 1].v_avg > v_avg)
-         {
-            v_avg = moments[i - 1].v_avg;
-            ix = i - 1;
-         }
+      // find max avg speed
+      if (moments[i - 1].v_avg > v_avg)
+      {
+         v_avg = moments[i - 1].v_avg;
+         ix = i - 1;
       }
    }
 
@@ -206,6 +267,7 @@ function calc_data(setup_, data_)
       remove_retired_moments(data_[i].id, data_[i].moments);
       setup_.teams[i].visible = 0;
       calc_moments(data_[i].moments, setup_.teams[i].start);
+      calc_dtf(data_[i].moments, setup_.course.nodes);
       calc_poi(data_[i].moments);
       // find passing of equator
       find_pass_lat(data_[i].moments, 0);

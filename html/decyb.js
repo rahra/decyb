@@ -491,8 +491,8 @@ function get_data(server)
       save_data(setup, data);
       gen_grid();
       calc_chart();
+      calc_course(setup.course.nodes);
       prep_vdh(setup, data);
-      calc_moments(setup.course.nodes, 0);
       calc_data(setup, data);
       //document.getElementById("pre").innerHTML = JSON.stringify(jdata, null, 2);
       update_graph();
