@@ -33,7 +33,6 @@ function fmod2(a)
 function coord_diff0(src, dst, dst2)
 {
    var dlat, dlon;
-   var dist, bearing;
 
    dlat = dst.lat - src.lat;
    dlon = (dst.lon - src.lon) * Math.cos(DEG2RAD((src.lat + dst.lat) / 2.0));
@@ -160,7 +159,6 @@ function calc_course(moments)
       moments[i + 1].dist = dst.dist;
       moments[i + 1].dist_tot = moments[i].dist_tot + dst.dist;
    }
-   console.log(moments);
 }
 
 
@@ -192,7 +190,8 @@ function calc_dtf(moments, course)
    var dist_tot = course[course.length - 1].dist_tot;
    var dst = {};
    var i = moments.length - 1;
-   for (var j = 0; j < course.length && i < moments.length; j++)
+   // Loop over all course points, starting with 2nd course point to avoid special corner case at the beginning of the ggr2022.
+   for (var j = 1; j < course.length && i < moments.length; j++)
    {
       for (; i >= 0; i--)
       {
@@ -201,9 +200,14 @@ function calc_dtf(moments, course)
             break;
          moments[i].dtf = dist_tot - course[j].dist_tot + dst.dist;
          moments[i].dmg = course[j].dist_tot - dst.dist;
+         /* just debugging
+         moments[i].d_j = j;
+         moments[i].d_b = diff_bearing(dst.bearing, course[j].bearing);
+         moments[i].d_dist = dst.dist;
+         moments[i].d_b2c = dst.bearing;
+         moments[i].d_cb = course[j].bearing; */
       }
    }
-   console.log(moments);
 }
 
 
@@ -286,7 +290,7 @@ function data_check(setup_, data_)
 {
    for (var i = 0; i < data_.length; i++)
       if (data_[i].id != setup_.teams[i].id)
-         console.log(data_[i].id + " != " + setup_.teams[i].id);
+         alert("unexpected sort order of arrays: " + data_[i].id + " != " + setup_.teams[i].id);
 }
 
 

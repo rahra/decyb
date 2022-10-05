@@ -134,16 +134,30 @@ function draw_moments(C, moments)
    C.ctx.beginPath();
    C.ctx.moveTo(0, C.d_max * C.sy);
    for (var i = moments.length - 1; i >= 0; i--)
-   {
-      // ignore everything before race start
-      if (moments[i].at < C.t_min)
-         continue;
-
       C.ctx.lineTo((moments[i].at - C.t_min) * C.sx, (C.d_max - moments[i].dist_tot) * C.sy);
-   }
+   C.ctx.stroke();
+
+   C.ctx.beginPath();
+   C.ctx.moveTo(0, C.d_max * C.sy);
+   for (var i = moments.length - 1; i >= 0; i--)
+      C.ctx.lineTo((moments[i].at - C.t_min) * C.sx, (C.d_max - moments[i].dmg) * C.sy);
    C.ctx.stroke();
 }
 
+
+/*! Fill the array between the curves "distance sailed" and "distance made
+ * good".
+ */
+function fill_moments(C, moments)
+{
+   C.ctx.beginPath();
+   C.ctx.moveTo(0, C.d_max * C.sy);
+   for (var i = moments.length - 1; i >= 0; i--)
+      C.ctx.lineTo((moments[i].at - C.t_min) * C.sx, (C.d_max - moments[i].dist_tot) * C.sy);
+   for (var i = 0; i < moments.length; i++)
+      C.ctx.lineTo((moments[i].at - C.t_min) * C.sx, (C.d_max - moments[i].dmg) * C.sy);
+   C.ctx.fill();
+}
 
 /*! This function draws the tracks marks (e.g. film drops) onto the distance
  * curves.
@@ -324,7 +338,6 @@ function draw_data(setup_, data_)
          height:DEFY 
       };
 
-   data_check(setup_, data_);
    document.body.style.backgroundColor = col_.bg;
    var canvas = document.getElementById("chart");
    C.ctx = canvas.getContext("2d");
@@ -383,6 +396,8 @@ function draw_data(setup_, data_)
          continue;
 
       draw_moments(C, data_[i].moments);
+      C.ctx.fillStyle = "#" + setup_.teams[i].colour + "10";
+      fill_moments(C, data_[i].moments);
       draw_moments_map(C, data_[i].moments);
       draw_marks(C, data_[i].moments);
       draw_v_avg(C, data_[i].moments);
@@ -488,6 +503,7 @@ function get_data(server)
    .then((response) => response.arrayBuffer())
    .then((bindata) => parse(bindata))
    .then((data) => {
+      data_check(setup, data);
       save_data(setup, data);
       gen_grid();
       calc_chart();
