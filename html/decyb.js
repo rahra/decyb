@@ -30,7 +30,8 @@ var G =
       {name: "INFO", enabled: 0},
       {name: "MAP", enabled: 1},
       {name: "DIAGRAM", enabled: 1},
-      {name: "LEADERBOARD", enabled: 1}
+      {name: "LEADERBOARD", enabled: 1},
+      {name: "RACECOURSE", enabled: 0}
    ]
 };
 
@@ -515,6 +516,14 @@ function draw_data(setup_, data_)
    C.ctx.save();
    C.ctx.translate(C.width * BORDER, C.height * BORDER);
    C.ctx.scale(1 - BORDER * 2, 1 - BORDER * 2);
+
+   if (G.bt[4].enabled)
+   {
+      C.ctx.strokeStyle = "#f000f0";
+      C.ctx.setLineDash([6, 3, 2, 3]);
+      draw_moments_map(C, setup_.course.nodes);
+      C.ctx.setLineDash([]);
+   }
 
    for (var i = 0; i < data_.length; i++)
    {
