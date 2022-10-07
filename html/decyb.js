@@ -267,6 +267,39 @@ function buttons(C, x, y)
 }
 
 
+/*! This function draws a color board just with the colors of the participants.
+ */
+function colorboard(C, x, y, setup_)
+{
+   const S = 20;
+
+   x -= S * setup_.teams.length / 2;
+
+   C.ctx.save();
+   C.ctx.strokeStyle = col_.tx;
+
+   for (var i = 0; i < setup_.teams.length; i++)
+   {
+      setup_.teams[i].x0 = x + i * S;
+      setup_.teams[i].y0 = y;
+      setup_.teams[i].x1 = setup_.teams[i].x0 + S
+      setup_.teams[i].y1 = setup_.teams[i].y0 + S;
+
+      if (G.mo_index == i || setup_.teams[i].visible)
+         C.ctx.fillStyle = "#" + setup_.teams[i].colour + "e0";
+      else
+         C.ctx.fillStyle = "#" + setup_.teams[i].colour + "80";
+
+      C.ctx.beginPath();
+      C.ctx.rect(setup_.teams[i].x0, setup_.teams[i].y0, S, S);
+      C.ctx.fill();
+      C.ctx.stroke();
+   }
+
+   C.ctx.restore();
+}
+
+
 /*! This function draws the leader board and sets the event coordinates.
  */
 function leaderboard(C, x, y, setup_, data_)
@@ -477,7 +510,7 @@ function draw_data(setup_, data_)
    buttons(C, C.width / 2, 20);
 
    if (G.bt[0].enabled)
-      caption(C, C.width / 2, 50);
+      caption(C, C.width / 2, G.bt[3].enabled ? 60 : 95);
 
    C.ctx.save();
    C.ctx.translate(C.width * BORDER, C.height * BORDER);
@@ -510,6 +543,8 @@ function draw_data(setup_, data_)
 
    if (G.bt[3].enabled)
       leaderboard(C, TEXTX, 20, setup_, data_);
+   else
+      colorboard(C, C.width / 2, 60, setup_);
 }
 
 
