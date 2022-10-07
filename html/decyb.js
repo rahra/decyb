@@ -27,7 +27,7 @@ var G =
    bt_index: -1,
    bt:
    [
-      {name: "INFO", enabled: 1},
+      {name: "INFO", enabled: 0},
       {name: "MAP", enabled: 1},
       {name: "DIAGRAM", enabled: 1},
       {name: "LEADERBOARD", enabled: 1}
@@ -225,6 +225,10 @@ function caption(C, x, y)
 }
 
 
+/*! This function draws the buttons and set the coordinates in the button
+ * object. The latter is necessary for the mouse_move_handler to detect if a
+ * button is hovered over.
+ */
 function buttons(C, x, y)
 {
    const w = BUTTONW, h = BUTTONH;
@@ -263,6 +267,46 @@ function buttons(C, x, y)
 }
 
 
+/*! This function draws the leader board and sets the event coordinates.
+ */
+function leaderboard(C, x, y, setup_, data_)
+{
+   var tw = measure_names(C, setup_, data_);
+
+   C.ctx.save();
+   C.ctx.fillStyle = col_.xbg;
+   C.ctx.beginPath();
+   C.ctx.rect(x, y, tw + 20, data_.length * NDIST + 10);
+   C.ctx.fill();
+
+   for (var i = 0; i < data_.length; i++)
+   {
+      setup_.teams[i].x0 = x;
+      setup_.teams[i].y0 = y + i * NDIST;
+      setup_.teams[i].x1 = setup_.teams[i].x0 + tw;
+      setup_.teams[i].y1 = setup_.teams[i].y0 + NDIST;
+
+      if (G.mo_index == i || setup_.teams[i].visible)
+      {
+         C.ctx.fillStyle = "#" + setup_.teams[i].colour + "ff";
+         C.ctx.font = "bold 14px sans-serif";
+      }
+      else
+      {
+         C.ctx.fillStyle = "#" + setup_.teams[i].colour + "e0";
+         C.ctx.font = "14px sans-serif";
+      }
+
+      // FIXME: this should go to calc_data() or similar
+      var v_avg = data_[i].moments[0].dist_tot * 3600 / (data_[i].moments[0].at - data_[i].moments[data_[i].moments.length - 1].at);
+
+      C.ctx.beginPath();
+      C.ctx.fillText(setup_.teams[i].name + ", dist = " + data_[i].moments[0].dist_tot.toFixed(1) + ", v_avg = " + v_avg.toFixed(2), setup_.teams[i].x0 + 10, setup_.teams[i].y0 + NDIST*0.8);
+   }
+   C.ctx.restore();
+}
+
+
 /*! This function draws the axis, grid lines, and the diagram captions.
  */
 function axis(C)
@@ -278,7 +322,6 @@ function axis(C)
 
    // x axis
    C.ctx.save();
-   //C.ctx.translate(0, C.d_max * C.sy);
    var t_diff = (C.t_max - C.t_min) / XDIFF;
    for (var t = C.t_min, td = new Date(); t < C.t_max ; t += t_diff)
    {
@@ -439,30 +482,14 @@ function draw_data(setup_, data_)
    C.ctx.save();
    C.ctx.translate(C.width * BORDER, C.height * BORDER);
    C.ctx.scale(1 - BORDER * 2, 1 - BORDER * 2);
-   tw_ = measure_names(C, setup_, data_);
-
-   C.ctx.fillStyle = col_.xbg;
-   C.ctx.rect(TEXTX - 10, 0, tw_, data_.length * NDIST + 10);
-   C.ctx.fill();
 
    for (var i = 0; i < data_.length; i++)
    {
       if (G.mo_index == i || setup_.teams[i].visible)
-      {
-         o = "ff";
-         C.ctx.font = "bold 14px sans-serif";
-      }
+         C.ctx.strokeStyle = "#" + setup_.teams[i].colour + "ff";
       else
-      {
-         o = "e0";
-         C.ctx.font = "14px sans-serif";
-      }
+         C.ctx.strokeStyle = "#" + setup_.teams[i].colour + "e0";
       C.ctx.lineWidth = G.mo_index == i ? 3 : 1;
-      C.ctx.strokeStyle = "#" + setup_.teams[i].colour + o;
-      C.ctx.fillStyle = "#" + setup_.teams[i].colour + o;
-
-      var v_avg = data_[i].moments[0].dist_tot * 3600 / (data_[i].moments[0].at - data_[i].moments[data_[i].moments.length - 1].at);
-      C.ctx.fillText(setup_.teams[i].name + ", dist = " + data_[i].moments[0].dist_tot.toFixed(1) + ", v_avg = " + v_avg.toFixed(2), TEXTX, (i+1) * NDIST);
 
       if (!setup_.teams[i].visible && G.mo_index != i)
          continue;
@@ -480,6 +507,9 @@ function draw_data(setup_, data_)
       }
    }
    C.ctx.restore();
+
+   if (G.bt[3].enabled)
+      leaderboard(C, TEXTX, 20, setup_, data_);
 }
 
 
@@ -490,6 +520,15 @@ function draw_data(setup_, data_)
 var _s, _j;
 
 
+function match_array_coords(x, y, a)
+{
+   for (var i = 0; i < a.length; i++)
+      if (x >= a[i].x0 && x < a[i].x1 && y >= a[i].y0 && y < a[i].y1)
+         return i;
+   return -1;
+}
+
+
 /*! This function determines the current mouse position of an event and detects
  * if the mouse is hovered over a participant, and which index it is.
  */
@@ -498,14 +537,8 @@ function handle_mouse_pos(e)
    var mx = e.pageX - document.getElementById("chart").getBoundingClientRect().left;
    var my = e.pageY - document.getElementById("chart").getBoundingClientRect().top;
 
-   var x = window.innerWidth * BORDER;
-   var y = window.innerHeight * BORDER;
-   G.mo_index = mx >= x + TEXTX && mx < x + TEXTX + tw_ && my >= y && my < _j.length * NDIST + y ? Math.floor((my - y) / NDIST) : -1;
-
-   var i;
-   for (i = 0, G.bt_index = -1; i < G.bt.length && G.bt_index == -1; i++)
-      if (mx >= G.bt[i].x0 && mx < G.bt[i].x1 && my >= G.bt[i].y0 && my < G.bt[i].y1)
-         G.bt_index = i;
+   G.mo_index = match_array_coords(mx, my, _s.teams);
+   G.bt_index = match_array_coords(mx, my, G.bt);
 }
 
 
