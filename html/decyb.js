@@ -17,9 +17,29 @@ const TEXTX = 80;
 const BORDER = 0.025;
 const DEFX = 1920;
 const DEFY = 1080;
+const BUTTONW = 120;
+const BUTTONH = 25;
+
+//! globale dynamic settings
+var G =
+{
+   mo_index: -1,
+   bt_index: -1,
+   bt:
+   [
+      {name: "INFO", enabled: 1},
+      {name: "MAP", enabled: 1},
+      {name: "DIAGRAM", enabled: 1},
+      {name: "LEADERBOARD", enabled: 1}
+   ]
+};
 
 //! color scheme definitions
-const cscheme_ = [{bg: "#171717", cap: "#b0b0b0", xbg: "#b0b0b030", tx: "#c0c0c0"}, {bg: "#e8e8d8", cap: "#404040", xbg: "#000000b0", tx: "#e8e8e8"}];
+const cscheme_ =
+[
+   {bg: "#171717", cap: "#b0b0b0", xbg: "#b0b0b030", xbgh: "#b0b0b050", bte: "#e0000030", bteh: "#e0000050", tx: "#c0c0c0"},
+   {bg: "#e8e8d8", cap: "#404040", xbg: "#000000b0", xbgh: "#000000e0", bte: "#e0000030", bteh: "#e0000050", tx: "#e8e8e8"}
+];
 var cur_scheme_ = 0;
 var col_ = cscheme_[cur_scheme_];
 
@@ -181,25 +201,65 @@ function draw_marks(C, moments)
 
 /*! This function prints the caption of the diagram.
  */
-function caption(C)
+function caption(C, x, y)
 {
    var text = title_.split("\n");
-   var w = 0;
+   var w = 0, b = 10;
 
    for (var i = 0; i < text.length; i++)
       w = Math.max(w, C.ctx.measureText(text[i]).width);
+   w += b;
 
    C.ctx.save();
+   C.ctx.translate(x - w / 2, y);
    C.ctx.beginPath();
    C.ctx.fillStyle = col_.xbg;
-   C.ctx.rect((C.t_max - C.t_min) * C.sx * 0.33 - 5, 0, w + 10, 20 * (text.length + .5));
+   C.ctx.rect(0, 0, w, 20 * (text.length + .5));
    C.ctx.fill();
 
    C.ctx.beginPath();
    C.ctx.fillStyle = col_.tx;
    for (var i = 0; i < text.length; i++)
-      C.ctx.fillText(text[i], (C.t_max - C.t_min) * C.sx * 0.33, 20 * (i + 1));
+      C.ctx.fillText(text[i], b / 2, 20 * (i + 1));
   C.ctx.restore();
+}
+
+
+function buttons(C, x, y)
+{
+   const w = BUTTONW, h = BUTTONH;
+   const x0 = x - w * G.bt.length / 2;
+   const y0 = y;
+
+   C.ctx.save();
+   C.ctx.strokeStyle = col_.tx;
+
+   for (var i = 0; i < G.bt.length; i++)
+   {
+      G.bt[i].x0 = x0 + i * w;
+      G.bt[i].y0 = y0;
+      G.bt[i].x1 = G.bt[i].x0 + w;
+      G.bt[i].y1 = G.bt[i].y0 + h;
+
+      if (G.bt_index == i)
+         C.ctx.fillStyle = G.bt[i].enabled ? col_.bteh : col_.xbgh;
+      else
+         C.ctx.fillStyle = G.bt[i].enabled ? col_.bte : col_.xbg;
+
+      C.ctx.beginPath();
+      C.ctx.rect(G.bt[i].x0, G.bt[i].y0, w, h);
+      C.ctx.fill();
+      C.ctx.stroke();
+   }
+
+   C.ctx.fillStyle = col_.tx;
+   C.ctx.beginPath();
+   for (var i = 0; i < G.bt.length; i++)
+   {
+      var tm = C.ctx.measureText(G.bt[i].name);
+      C.ctx.fillText(G.bt[i].name, G.bt[i].x0 + (w - tm.width) / 2, G.bt[i].y0 + (h + tm.actualBoundingBoxDescent + tm.actualBoundingBoxAscent) / 2 - tm.actualBoundingBoxDescent);
+   }
+   C.ctx.restore();
 }
 
 
@@ -344,29 +404,41 @@ function draw_data(setup_, data_)
    C.width = canvas.width = window.innerWidth;
    C.height = canvas.height = window.innerHeight;
 
-   C.ctx.translate(C.width * BORDER, C.height * BORDER);
-   //C.ctx.scale(0.95, 0.95);
-
    C.t_min = setup_.teams[0].start;
    for (var i = 0; i < data_.length; i++)
    {
-      //C.t_min = Math.min(C.t_min, data_[i].moments[data_[i].moments.length - 1].at);
       C.t_max = Math.max(C.t_max, data_[i].moments[0].at);
       C.d_max = Math.max(C.d_max, data_[i].moments[0].dist_tot);
    }
 
    var ysplit = 0.8;
-   C.sx = C.width / (C.t_max - C.t_min) * (1 - 2 * BORDER);
-   C.sy = C.height / C.d_max * ysplit * (1 - 2 * BORDER);
-   C.sy2 = C.height / C.v_max * (1 - ysplit) * (1 - 2 * BORDER);
+   C.sx = C.width / (C.t_max - C.t_min);
+   C.sy = C.height / C.d_max * ysplit;
+   C.sy2 = C.height / C.v_max * (1 - ysplit);
 
    C.ctx.lineWidth = 1;
    C.ctx.font = "14px sans-serif";
 
-   draw_map(C);
-   axis(C);
-   caption(C);
+   C.ctx.save();
+   C.ctx.translate(C.width * BORDER, C.height * BORDER);
+   C.ctx.scale(1 - BORDER * 2, 1 - BORDER * 2);
 
+   if (G.bt[1].enabled)
+      draw_map(C);
+
+   if (G.bt[2].enabled)
+      axis(C);
+
+   C.ctx.restore();
+
+   buttons(C, C.width / 2, 20);
+
+   if (G.bt[0].enabled)
+      caption(C, C.width / 2, 50);
+
+   C.ctx.save();
+   C.ctx.translate(C.width * BORDER, C.height * BORDER);
+   C.ctx.scale(1 - BORDER * 2, 1 - BORDER * 2);
    tw_ = measure_names(C, setup_, data_);
 
    C.ctx.fillStyle = col_.xbg;
@@ -375,7 +447,7 @@ function draw_data(setup_, data_)
 
    for (var i = 0; i < data_.length; i++)
    {
-      if (_a == i || setup_.teams[i].visible)
+      if (G.mo_index == i || setup_.teams[i].visible)
       {
          o = "ff";
          C.ctx.font = "bold 14px sans-serif";
@@ -385,31 +457,37 @@ function draw_data(setup_, data_)
          o = "e0";
          C.ctx.font = "14px sans-serif";
       }
-      C.ctx.lineWidth = _a == i ? 3 : 1;
+      C.ctx.lineWidth = G.mo_index == i ? 3 : 1;
       C.ctx.strokeStyle = "#" + setup_.teams[i].colour + o;
       C.ctx.fillStyle = "#" + setup_.teams[i].colour + o;
 
       var v_avg = data_[i].moments[0].dist_tot * 3600 / (data_[i].moments[0].at - data_[i].moments[data_[i].moments.length - 1].at);
       C.ctx.fillText(setup_.teams[i].name + ", dist = " + data_[i].moments[0].dist_tot.toFixed(1) + ", v_avg = " + v_avg.toFixed(2), TEXTX, (i+1) * NDIST);
 
-      if (!setup_.teams[i].visible && _a != i)
+      if (!setup_.teams[i].visible && G.mo_index != i)
          continue;
 
-      draw_moments(C, data_[i].moments);
-      C.ctx.fillStyle = "#" + setup_.teams[i].colour + "10";
-      fill_moments(C, data_[i].moments);
-      draw_moments_map(C, data_[i].moments);
-      draw_marks(C, data_[i].moments);
-      draw_v_avg(C, data_[i].moments);
+      if (G.bt[1].enabled)
+         draw_moments_map(C, data_[i].moments);
+
+      if (G.bt[2].enabled)
+      {
+         draw_moments(C, data_[i].moments);
+         C.ctx.fillStyle = "#" + setup_.teams[i].colour + "10";
+         fill_moments(C, data_[i].moments);
+         draw_marks(C, data_[i].moments);
+         draw_v_avg(C, data_[i].moments);
+      }
    }
+   C.ctx.restore();
 }
 
 
 
-// some global variables (_s: RaceSetup, _j: AllPositions3, _a: mouse over name index
+// some global variables (_s: RaceSetup, _j: AllPositions3
 // FIXME: I hate this, but due to a lack of understanding of the fetch/then
 // construction I was yet unable to write this in a proper manner.
-var _s, _j, _a = -1;
+var _s, _j;
 
 
 /*! This function determines the current mouse position of an event and detects
@@ -422,7 +500,12 @@ function handle_mouse_pos(e)
 
    var x = window.innerWidth * BORDER;
    var y = window.innerHeight * BORDER;
-   _a = mx >= x + TEXTX && mx < x + TEXTX + tw_ && my >= y && my < _j.length * NDIST + y ? Math.floor((my - y) / NDIST) : -1;
+   G.mo_index = mx >= x + TEXTX && mx < x + TEXTX + tw_ && my >= y && my < _j.length * NDIST + y ? Math.floor((my - y) / NDIST) : -1;
+
+   var i;
+   for (i = 0, G.bt_index = -1; i < G.bt.length && G.bt_index == -1; i++)
+      if (mx >= G.bt[i].x0 && mx < G.bt[i].x1 && my >= G.bt[i].y0 && my < G.bt[i].y1)
+         G.bt_index = i;
 }
 
 
@@ -441,10 +524,10 @@ function mouse_move_handler(e)
  */
 function mouse_click_handler(e)
 {
-   handle_mouse_pos(e);
-
-   if (_a >= 0 && _a < _s.teams.length)
-      _s.teams[_a].visible ^= 1;
+   if (G.mo_index >= 0 && G.mo_index < _s.teams.length)
+      _s.teams[G.mo_index].visible ^= 1;
+   else if (G.bt_index >= 0)
+      G.bt[G.bt_index].enabled ^= 1;
    else
    {
       cur_scheme_ = (cur_scheme_ + 1) % cscheme_.length;
