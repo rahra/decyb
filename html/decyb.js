@@ -634,43 +634,32 @@ function update_graph()
 }
 
 
-/*! This function corrects the timestamps of the VDH track to the current race
- * and adds to track to the ggr2022 race data.
- * FIXME: This code should go into another file since it is GGR-specific.
- */
-function prep_vdh(setup, data)
-{
-   const diff = 1662300000 - 1530439200;
-   for (var i = 0; i < vdhd_.moments.length; i++)
-      vdhd_.moments[i].at += diff;
-   data.push(vdhd_);
-   setup.teams.push(vdhs_);
-}
-
-
 /*! This function initially fetches the race data from the YB server.
  * FIXME: The subpath "ggr2022" should be replaced by a variable.
  */
-function get_data(server)
+function get_data(server, race, init_func)
 {
-   fetch('https://' + server + '/JSON/ggr2022/leaderboard')
+   fetch('https://' + server + '/JSON/' + race + '/leaderboard')
    .then((response) => response.json())
    .then((board) => {
-   fetch('https://' + server + '/JSON/ggr2022/RaceSetup')
+   fetch('https://' + server + '/JSON/' + race + '/RaceSetup')
    .then((response) => response.json())
    .then(function(setup) {
-   fetch('https://' + server + '/BIN/ggr2022/AllPositions3')
+   fetch('https://' + server + '/BIN/' + race + '/AllPositions3')
    .then((response) => response.arrayBuffer())
    .then((bindata) => parse(bindata))
    .then((data) => {
+      setup.teams.sort((a, b) => {return b.id - a.id;});
+      data.sort((a, b) => {return b.id - a.id;});
+      init_func(setup, data);
       data_check(setup, data);
       save_data(setup, data);
       gen_grid();
       calc_chart();
       calc_course(setup.course.nodes);
-      prep_vdh(setup, data);
       calc_data(setup, data);
-      //document.getElementById("pre").innerHTML = JSON.stringify(jdata, null, 2);
+      //document.getElementById("pre").innerHTML = JSON.stringify(data, null, 2);
+      document.title = setup.title;
       update_graph();
    })
    })

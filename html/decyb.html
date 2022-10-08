@@ -33,7 +33,7 @@
             "Hover over the participants' names to display the curves.\n" +
             "Click on the names to make the curves sticky.\n" +
             "Click somewhere else to switch color scheme.\n" +
-            "Racedata Viewer 1.11, Bernhard R. Fischer <bf@abenteuerland.at>\n" +
+            "Racedata Viewer 1.12, Bernhard R. Fischer <bf@abenteuerland.at>\n" +
             "Source: https://github.com/rahra/decyb";
 
          // additional individual race information
@@ -52,8 +52,20 @@
             ]
          };
 
-         //get_data("localhost");
-         get_data("cf.yb.tl");
+         /*! This function corrects the timestamps of the VDH track to the current race
+          * and adds to track to the ggr2022 race data.
+          */
+         function prep_vdh(setup, data)
+         {
+            const diff = 1662300000 - 1530439200;
+            for (var i = 0; i < vdhd_.moments.length; i++)
+               vdhd_.moments[i].at += diff;
+            data.push(vdhd_);
+            setup.teams.push(vdhs_);
+         }
+
+         //get_data("localhost", "ggr2022", prep_vdh);
+         get_data("cf.yb.tl", "ggr2022", prep_vdh);
 
       </script>
    </body>
