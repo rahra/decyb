@@ -1,5 +1,7 @@
 #!/bin/sh
 
+RACE=ggr2022
+
 if test ! -e decyb ; then
    gcc -Wall -O2 -o decyb decyb.c
 fi
@@ -14,9 +16,9 @@ ren()
 ren RaceSetup
 ren AllPositions3
 
-wget https://cf.yb.tl/JSON/ggr2022/RaceSetup
-wget https://cf.yb.tl/JSON/ggr2022/leaderboard
-wget https://cf.yb.tl/BIN/ggr2022/AllPositions3
+wget https://cf.yb.tl/JSON/$RACE/RaceSetup
+wget https://cf.yb.tl/JSON/$RACE/leaderboard
+wget https://cf.yb.tl/BIN/$RACE/AllPositions3
 
 which jq >/dev/null
 if test $? -eq 0 ; then
