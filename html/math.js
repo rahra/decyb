@@ -34,6 +34,14 @@ function coord_diff0(src, dst, dst2)
 {
    var dlat, dlon;
 
+   // handle corner case if src == dst
+   if (src.lat == dst.lat && src.lon == dst.lon)
+   {
+      dst2.bearing = 0;
+      dst2.dist = 0;
+      return;
+   }
+
    dlat = dst.lat - src.lat;
    dlon = (dst.lon - src.lon) * Math.cos(DEG2RAD((src.lat + dst.lat) / 2.0));
 
