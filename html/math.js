@@ -141,13 +141,13 @@ function time()
 /*! This function eliminates moments which happen in the future (according to
  * the timestamp) or which occured before the start of the race.
  */
-function clean_moments(moments, t_min)
+function clean_moments(moments, t_min, t_max)
 {
    // remove elements before the start
    for (; moments.slice(-1)[0].at < t_min;)
       moments.pop();
    // remove elements which are in the future
-   for (; moments[0].at > time();)
+   for (; moments[0].at > t_max;)
       moments.shift();
 }
 
@@ -275,7 +275,7 @@ function calc_data(setup_, data_)
 {
    for (var i = 0; i < data_.length; i++)
    {
-      clean_moments(data_[i].moments, setup_.teams[i].start);
+      clean_moments(data_[i].moments, setup_.teams[i].start, setup_.teams[i].hasOwnProperty("finishedAt") ? setup_.teams[i].finishedAt : time());
       remove_retired_moments(data_[i].id, data_[i].moments);
       setup_.teams[i].visible = 0;
       calc_moments(data_[i].moments, setup_.teams[i].start);

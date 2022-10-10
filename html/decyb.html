@@ -60,6 +60,8 @@
             const diff = 1662300000 - 1530439200;
             for (var i = 0; i < vdhd_.moments.length; i++)
                vdhd_.moments[i].at += diff;
+            vdhs_.start += diff;
+            vdhs_.finishedAt += diff;
             data.push(vdhd_);
             setup.teams.push(vdhs_);
          }

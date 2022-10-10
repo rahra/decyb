@@ -481,9 +481,9 @@ function draw_data(setup_, data_)
    C.width = canvas.width = window.innerWidth;
    C.height = canvas.height = window.innerHeight;
 
-   C.t_min = setup_.teams[0].start;
    for (var i = 0; i < data_.length; i++)
    {
+      C.t_min = Math.min(C.t_min, setup_.teams[i].start);
       C.t_max = Math.max(C.t_max, data_[i].moments[0].at);
       C.d_max = Math.max(C.d_max, data_[i].moments[0].dist_tot);
    }
