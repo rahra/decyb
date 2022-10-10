@@ -275,7 +275,7 @@ function calc_data(setup_, data_)
 {
    for (var i = 0; i < data_.length; i++)
    {
-      clean_moments(data_[i].moments, setup_.teams[i].start, setup_.teams[i].hasOwnProperty("finishedAt") ? setup_.teams[i].finishedAt : time());
+      clean_moments(data_[i].moments, setup_.teams[i].start, setup_.teams[i].hasOwnProperty("finishedAt") ? Math.min(time(), setup_.teams[i].finishedAt) : time());
       remove_retired_moments(data_[i].id, data_[i].moments);
       setup_.teams[i].visible = 0;
       calc_moments(data_[i].moments, setup_.teams[i].start);

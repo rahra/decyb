@@ -273,6 +273,7 @@ function buttons(C, x, y)
 function colorboard(C, x, y, setup_)
 {
    const S = 20;
+   const x0 = x;
 
    x -= S * setup_.teams.length / 2;
 
@@ -295,6 +296,9 @@ function colorboard(C, x, y, setup_)
       C.ctx.rect(setup_.teams[i].x0, setup_.teams[i].y0, S, S);
       C.ctx.fill();
       C.ctx.stroke();
+
+      if (G.mo_index == i)
+         C.ctx.fillText(setup_.teams[i].name, x0 - C.ctx.measureText(setup_.teams[i].name).width / 2, y + 2 * S);
    }
 
    C.ctx.restore();
