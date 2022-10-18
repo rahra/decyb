@@ -15,6 +15,7 @@ ren()
 
 ren RaceSetup
 ren AllPositions3
+ren leaderboard
 
 wget https://cf.yb.tl/JSON/$RACE/RaceSetup
 wget https://cf.yb.tl/JSON/$RACE/leaderboard
