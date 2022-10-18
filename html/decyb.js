@@ -29,8 +29,8 @@ var G =
    [
       {name: "INFO", enabled: 0},
       {name: "MAP", enabled: 1},
-      {name: "DIAGRAM", enabled: 1},
-      {name: "LEADERBOARD", enabled: 1},
+      {name: "DIAGRAM", enabled: 0},
+      {name: "LEADERBOARD", enabled: 0},
       {name: "RACECOURSE", enabled: 0}
    ]
 };
@@ -302,7 +302,7 @@ function colorboard(C, x, y, setup)
       C.ctx.stroke();
 
       if (G.mo_index == i)
-         C.ctx.fillText(setup.teams[i].name, x0 - C.ctx.measureText(setup.teams[i].name).width / 2, y + 2 * S);
+         C.ctx.fillText(setup.teams[i].display_name, x0 - C.ctx.measureText(setup.teams[i].display_name).width / 2, y + 2 * S);
    }
 
    C.ctx.restore();
@@ -441,7 +441,23 @@ function draw_map(C)
    C.ctx.lineWidth = 2;
    for (i = 0; i < c_.length; i++)
    {
-      C.ctx.strokeStyle = c_[i].tags.type == "meridian" || c_[i].tags.type == "equator" ? "#606000" : "#801000";
+      switch (c_[i].tags.type)
+      {
+         case "meridian":
+         case "equator":
+            C.ctx.strokeStyle = "#606000";
+            C.ctx.setLineDash([]);
+            break;
+         case "latitude":
+         case "longitude":
+            C.ctx.strokeStyle = "#606000";
+            C.ctx.setLineDash([2, 3]);
+            break;
+         default:
+            C.ctx.strokeStyle = "#801000";
+            C.ctx.setLineDash([]);
+      }
+      //C.ctx.strokeStyle = c_[i].tags.type == "meridian" || c_[i].tags.type == "equator" ? "#606000" : "#801000";
       C.ctx.beginPath();
       var olon;
       for (j = 0; j < c_[i].nodes.length; j++)

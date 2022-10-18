@@ -405,6 +405,20 @@ function calc_chart()
 }
 
 
+function gen_lat(nodes, lat)
+{
+   for (var e = -180; e <= 180; e += 10)
+      nodes.push({N: lat, E: e});
+}
+
+
+function gen_lon(nodes, lon)
+{
+   for (var n = 0; n <= 360; n += 10)
+      nodes.push({N: n <= 180 ? n - 90 : 270 - n, E: n <= 180 ? lon : lonmod(lon + 180)});
+}
+
+
 /*! Add grid lines (equator and meridian) to the chart data in real geographic
  * coordinates.
  */
@@ -413,15 +427,32 @@ function gen_grid()
    var eq;
 
    eq = {type: "way", tags: {type: "equator"}, nodes: []};
-   for (var e = -180; e <= 180; e += 10)
-      eq.nodes.push({N: 0, E: e});
+   gen_lat(eq.nodes, 0);
    c_.push(eq);
 
    eq = {type: "way", tags: {type: "meridian"}, nodes: []};
-   for (var n = -90; n <= 90; n += 10)
-      eq.nodes.push({N: n, E: 0});
-   for (; n >= -90; n -= 10)
-      eq.nodes.push({N: n, E: 180});
+   gen_lon(eq.nodes, 0);
    c_.push(eq);
+
+   for (var n = 20; n <= 80; n += 20)
+   {
+      eq = {type: "way", tags: {type: "latitude", lat: n}, nodes: []};
+      gen_lat(eq.nodes, n);
+      c_.push(eq);
+   }
+
+   for (var n = -80; n <= -20; n += 20)
+   {
+      eq = {type: "way", tags: {type: "latitude", lat: n}, nodes: []};
+      gen_lat(eq.nodes, n);
+      c_.push(eq);
+   }
+
+   for (var e = 30; e < 180; e += 30)
+   {
+      eq = {type: "way", tags: {type: "longitude", lon: e}, nodes: []};
+      gen_lon(eq.nodes, e);
+      c_.push(eq);
+   }
 }
 
