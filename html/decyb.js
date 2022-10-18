@@ -339,11 +339,8 @@ function leaderboard(C, x, y, setup)
          C.ctx.font = "14px sans-serif";
       }
 
-      // FIXME: this should go to calc_data() or similar
-      var v_avg = setup.teams[i].data.moments[0].dist_tot * 3600 / (setup.teams[i].data.moments[0].at - setup.teams[i].data.moments[setup.teams[i].data.moments.length - 1].at);
-
       C.ctx.beginPath();
-      C.ctx.fillText(setup.teams[i].name + ", dist = " + setup.teams[i].data.moments[0].dist_tot.toFixed(1) + ", v_avg = " + v_avg.toFixed(2), setup.teams[i].x0 + 10, setup.teams[i].y0 + NDIST*0.8);
+      C.ctx.fillText(setup.teams[i].display_name, setup.teams[i].x0 + 10, setup.teams[i].y0 + NDIST*0.8);
    }
    C.ctx.restore();
 }
@@ -423,10 +420,7 @@ function measure_names(C, setup)
    C.ctx.save();
    C.ctx.font = "bold 14px sans-serif";
    for (var i = 0; i < setup.teams.length; i++)
-   {
-      var v_avg = setup.teams[i].data.moments[0].dist_tot * 3600 / (setup.teams[i].data.moments[0].at - setup.teams[i].data.moments[setup.teams[i].data.moments.length - 1].at);
-      w = Math.max(w, C.ctx.measureText(setup.teams[i].name + ", dist = " + setup.teams[i].data.moments[0].dist_tot.toFixed(1) + ", v_avg = " + v_avg.toFixed(2)).width);
-   }
+      w = Math.max(w, C.ctx.measureText(setup.teams[i].display_name).width);
    C.ctx.restore();
    return w;
 }
@@ -648,6 +642,7 @@ function get_data(server, race, init_func)
       calc_chart();
       calc_course(setup.course.nodes);
       calc_data(setup);
+      setup.teams.sort((a, b) => (a.board && b.board && a.board.dtf - b.board.dtf));
       //document.getElementById("pre").innerHTML = JSON.stringify(data, null, 2);
       document.title = setup.title;
       update_graph();

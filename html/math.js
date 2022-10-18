@@ -254,9 +254,12 @@ function calc_moments(moments, t_min)
       }
    }
 
+   if (ix == -1)
+      return 0;
+
    // set max speed
-   if (ix != -1)
-      moments[ix].v_avg_max = 1;
+   moments[ix].v_avg_max = 1;
+   return moments[0].dist_tot * 3600 / (moments[0].at - moments[moments.length - 1].at);
 }
  
 
@@ -275,6 +278,14 @@ function remove_retired_moments(id, moments)
 }
 
 
+/*! Make strings to be displayed in the leaderboard.
+ */
+function display_string(team)
+{
+   return team.name + ", dist = " + team.data.moments[0].dist_tot.toFixed(1) + ", v_avg = " + team.v_avg.toFixed(2) + (team.board && team.board.dtf > 0 ? ", dtf = " + (team.board.dtf / 1852).toFixed(0) : "");
+}
+
+
 /*! This function just calls the calculation functions above for each track.
  */
 function calc_data(setup)
@@ -284,7 +295,8 @@ function calc_data(setup)
       clean_moments(setup.teams[i].data.moments, setup.teams[i].start, setup.teams[i].hasOwnProperty("finishedAt") ? Math.min(time(), setup.teams[i].finishedAt) : time());
       remove_retired_moments(setup.teams[i].id, setup.teams[i].data.moments);
       setup.teams[i].visible = 0;
-      calc_moments(setup.teams[i].data.moments, setup.teams[i].start);
+      setup.teams[i].v_avg = calc_moments(setup.teams[i].data.moments, setup.teams[i].start);
+      setup.teams[i].display_name = display_string(setup.teams[i]);
       calc_dtf(setup.teams[i].data.moments, setup.course.nodes);
       calc_poi(setup.teams[i].data.moments);
       // find passing of equator
