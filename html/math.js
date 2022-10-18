@@ -90,6 +90,12 @@ function coord_str(pos, flags)
 }
 
 
+function cmp_id(a, b)
+{
+   return a.id - b.id;
+}
+
+
 /*! Find if a boat passes a specific latitude.
  */
 function find_pass_lat(moments, lat)
@@ -271,34 +277,29 @@ function remove_retired_moments(id, moments)
 
 /*! This function just calls the calculation functions above for each track.
  */
-function calc_data(setup_, data_)
+function calc_data(setup)
 {
-   for (var i = 0; i < data_.length; i++)
+   for (var i = 0; i < setup.teams.length; i++)
    {
-      clean_moments(data_[i].moments, setup_.teams[i].start, setup_.teams[i].hasOwnProperty("finishedAt") ? Math.min(time(), setup_.teams[i].finishedAt) : time());
-      remove_retired_moments(data_[i].id, data_[i].moments);
-      setup_.teams[i].visible = 0;
-      calc_moments(data_[i].moments, setup_.teams[i].start);
-      calc_dtf(data_[i].moments, setup_.course.nodes);
-      calc_poi(data_[i].moments);
+      clean_moments(setup.teams[i].data.moments, setup.teams[i].start, setup.teams[i].hasOwnProperty("finishedAt") ? Math.min(time(), setup.teams[i].finishedAt) : time());
+      remove_retired_moments(setup.teams[i].id, setup.teams[i].data.moments);
+      setup.teams[i].visible = 0;
+      calc_moments(setup.teams[i].data.moments, setup.teams[i].start);
+      calc_dtf(setup.teams[i].data.moments, setup.course.nodes);
+      calc_poi(setup.teams[i].data.moments);
       // find passing of equator
-      find_pass_lat(data_[i].moments, 0);
+      find_pass_lat(setup.teams[i].data.moments, 0);
    }
 }
 
 
-/*! This function does a safety check, if the order of tracks and teams found
- * in "AllPositions3" and "RaceSetup" is the same (which seams to be at the
- * moment). Otherwise the data would have to be resorted by the "id" which
- * identifies the data.
- * So this function currently is for debugging. In a future release I'll
- * directly take care on the id instead of the arrays indexes.
- */
-function data_check(setup_, data_)
+function link_data(setup, data, board)
 {
-   for (var i = 0; i < data_.length; i++)
-      if (data_[i].id != setup_.teams[i].id)
-         alert("unexpected sort order of arrays: " + data_[i].id + " != " + setup_.teams[i].id);
+   for (var i = 0; i < setup.teams.length; i++)
+   {
+      setup.teams[i].data = data.find(d => d.id == setup.teams[i].id);
+      setup.teams[i].board = board.tags[0].teams.find(d => d.id == setup.teams[i].id);
+   }
 }
 
 

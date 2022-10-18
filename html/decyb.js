@@ -20,7 +20,7 @@ const DEFY = 1080;
 const BUTTONW = 120;
 const BUTTONH = 25;
 
-//! globale dynamic settings
+//! global dynamic settings
 var G =
 {
    mo_index: -1,
@@ -34,6 +34,10 @@ var G =
       {name: "RACECOURSE", enabled: 0}
    ]
 };
+
+//! global data struct containing RaceSetup, AllPositions3, and the
+//leaderboard.
+var setup_;
 
 //! color scheme definitions
 const cscheme_ =
@@ -270,35 +274,35 @@ function buttons(C, x, y)
 
 /*! This function draws a color board just with the colors of the participants.
  */
-function colorboard(C, x, y, setup_)
+function colorboard(C, x, y, setup)
 {
    const S = 20;
    const x0 = x;
 
-   x -= S * setup_.teams.length / 2;
+   x -= S * setup.teams.length / 2;
 
    C.ctx.save();
    C.ctx.strokeStyle = col_.tx;
 
-   for (var i = 0; i < setup_.teams.length; i++)
+   for (var i = 0; i < setup.teams.length; i++)
    {
-      setup_.teams[i].x0 = x + i * S;
-      setup_.teams[i].y0 = y;
-      setup_.teams[i].x1 = setup_.teams[i].x0 + S
-      setup_.teams[i].y1 = setup_.teams[i].y0 + S;
+      setup.teams[i].x0 = x + i * S;
+      setup.teams[i].y0 = y;
+      setup.teams[i].x1 = setup.teams[i].x0 + S
+      setup.teams[i].y1 = setup.teams[i].y0 + S;
 
-      if (G.mo_index == i || setup_.teams[i].visible)
-         C.ctx.fillStyle = "#" + setup_.teams[i].colour + "e0";
+      if (G.mo_index == i || setup.teams[i].visible)
+         C.ctx.fillStyle = "#" + setup.teams[i].colour + "e0";
       else
-         C.ctx.fillStyle = "#" + setup_.teams[i].colour + "80";
+         C.ctx.fillStyle = "#" + setup.teams[i].colour + "80";
 
       C.ctx.beginPath();
-      C.ctx.rect(setup_.teams[i].x0, setup_.teams[i].y0, S, S);
+      C.ctx.rect(setup.teams[i].x0, setup.teams[i].y0, S, S);
       C.ctx.fill();
       C.ctx.stroke();
 
       if (G.mo_index == i)
-         C.ctx.fillText(setup_.teams[i].name, x0 - C.ctx.measureText(setup_.teams[i].name).width / 2, y + 2 * S);
+         C.ctx.fillText(setup.teams[i].name, x0 - C.ctx.measureText(setup.teams[i].name).width / 2, y + 2 * S);
    }
 
    C.ctx.restore();
@@ -307,39 +311,39 @@ function colorboard(C, x, y, setup_)
 
 /*! This function draws the leader board and sets the event coordinates.
  */
-function leaderboard(C, x, y, setup_, data_)
+function leaderboard(C, x, y, setup)
 {
-   var tw = measure_names(C, setup_, data_);
+   var tw = measure_names(C, setup);
 
    C.ctx.save();
    C.ctx.fillStyle = col_.xbg;
    C.ctx.beginPath();
-   C.ctx.rect(x, y, tw + 20, data_.length * NDIST + 10);
+   C.ctx.rect(x, y, tw + 20, setup.teams.length * NDIST + 10);
    C.ctx.fill();
 
-   for (var i = 0; i < data_.length; i++)
+   for (var i = 0; i < setup.teams.length; i++)
    {
-      setup_.teams[i].x0 = x;
-      setup_.teams[i].y0 = y + i * NDIST;
-      setup_.teams[i].x1 = setup_.teams[i].x0 + tw;
-      setup_.teams[i].y1 = setup_.teams[i].y0 + NDIST;
+      setup.teams[i].x0 = x;
+      setup.teams[i].y0 = y + i * NDIST;
+      setup.teams[i].x1 = setup.teams[i].x0 + tw;
+      setup.teams[i].y1 = setup.teams[i].y0 + NDIST;
 
-      if (G.mo_index == i || setup_.teams[i].visible)
+      if (G.mo_index == i || setup.teams[i].visible)
       {
-         C.ctx.fillStyle = "#" + setup_.teams[i].colour + "ff";
+         C.ctx.fillStyle = "#" + setup.teams[i].colour + "ff";
          C.ctx.font = "bold 14px sans-serif";
       }
       else
       {
-         C.ctx.fillStyle = "#" + setup_.teams[i].colour + "e0";
+         C.ctx.fillStyle = "#" + setup.teams[i].colour + "e0";
          C.ctx.font = "14px sans-serif";
       }
 
       // FIXME: this should go to calc_data() or similar
-      var v_avg = data_[i].moments[0].dist_tot * 3600 / (data_[i].moments[0].at - data_[i].moments[data_[i].moments.length - 1].at);
+      var v_avg = setup.teams[i].data.moments[0].dist_tot * 3600 / (setup.teams[i].data.moments[0].at - setup.teams[i].data.moments[setup.teams[i].data.moments.length - 1].at);
 
       C.ctx.beginPath();
-      C.ctx.fillText(setup_.teams[i].name + ", dist = " + data_[i].moments[0].dist_tot.toFixed(1) + ", v_avg = " + v_avg.toFixed(2), setup_.teams[i].x0 + 10, setup_.teams[i].y0 + NDIST*0.8);
+      C.ctx.fillText(setup.teams[i].name + ", dist = " + setup.teams[i].data.moments[0].dist_tot.toFixed(1) + ", v_avg = " + v_avg.toFixed(2), setup.teams[i].x0 + 10, setup.teams[i].y0 + NDIST*0.8);
    }
    C.ctx.restore();
 }
@@ -413,15 +417,15 @@ function axis(C)
 
 /*! This helper function determins the maximum width of the name box.
  */
-function measure_names(C, setup_, data_)
+function measure_names(C, setup)
 {
    var w = 0;
    C.ctx.save();
    C.ctx.font = "bold 14px sans-serif";
-   for (var i = 0; i < data_.length; i++)
+   for (var i = 0; i < setup.teams.length; i++)
    {
-      var v_avg = data_[i].moments[0].dist_tot * 3600 / (data_[i].moments[0].at - data_[i].moments[data_[i].moments.length - 1].at);
-      w = Math.max(w, C.ctx.measureText(setup_.teams[i].name + ", dist = " + data_[i].moments[0].dist_tot.toFixed(1) + ", v_avg = " + v_avg.toFixed(2)).width);
+      var v_avg = setup.teams[i].data.moments[0].dist_tot * 3600 / (setup.teams[i].data.moments[0].at - setup.teams[i].data.moments[setup.teams[i].data.moments.length - 1].at);
+      w = Math.max(w, C.ctx.measureText(setup.teams[i].name + ", dist = " + setup.teams[i].data.moments[0].dist_tot.toFixed(1) + ", v_avg = " + v_avg.toFixed(2)).width);
    }
    C.ctx.restore();
    return w;
@@ -463,7 +467,7 @@ function draw_map(C)
 
 /*! This function is the main drawing function and draws the complete diagram.
  */
-function draw_data(setup_, data_)
+function draw_data(setup)
 {
    // drawing parameters
    var C =
@@ -485,11 +489,11 @@ function draw_data(setup_, data_)
    C.width = canvas.width = window.innerWidth;
    C.height = canvas.height = window.innerHeight;
 
-   for (var i = 0; i < data_.length; i++)
+   for (var i = 0; i < setup.teams.length; i++)
    {
-      C.t_min = Math.min(C.t_min, setup_.teams[i].start);
-      C.t_max = Math.max(C.t_max, data_[i].moments[0].at);
-      C.d_max = Math.max(C.d_max, data_[i].moments[0].dist_tot);
+      C.t_min = Math.min(C.t_min, setup.teams[i].start);
+      C.t_max = Math.max(C.t_max, setup.teams[i].data.moments[0].at);
+      C.d_max = Math.max(C.d_max, setup.teams[i].data.moments[0].dist_tot);
    }
 
    var ysplit = 0.8;
@@ -525,47 +529,40 @@ function draw_data(setup_, data_)
    {
       C.ctx.strokeStyle = "#f000f0";
       C.ctx.setLineDash([6, 3, 2, 3]);
-      draw_moments_map(C, setup_.course.nodes);
+      draw_moments_map(C, setup.course.nodes);
       C.ctx.setLineDash([]);
    }
 
-   for (var i = 0; i < data_.length; i++)
+   for (var i = 0; i < setup.teams.length; i++)
    {
-      if (G.mo_index == i || setup_.teams[i].visible)
-         C.ctx.strokeStyle = "#" + setup_.teams[i].colour + "ff";
+      if (G.mo_index == i || setup.teams[i].visible)
+         C.ctx.strokeStyle = "#" + setup.teams[i].colour + "ff";
       else
-         C.ctx.strokeStyle = "#" + setup_.teams[i].colour + "e0";
+         C.ctx.strokeStyle = "#" + setup.teams[i].colour + "e0";
       C.ctx.lineWidth = G.mo_index == i ? 3 : 1;
 
-      if (!setup_.teams[i].visible && G.mo_index != i)
+      if (!setup.teams[i].visible && G.mo_index != i)
          continue;
 
       if (G.bt[1].enabled)
-         draw_moments_map(C, data_[i].moments);
+         draw_moments_map(C, setup.teams[i].data.moments);
 
       if (G.bt[2].enabled)
       {
-         draw_moments(C, data_[i].moments);
-         C.ctx.fillStyle = "#" + setup_.teams[i].colour + "10";
-         fill_moments(C, data_[i].moments);
-         draw_marks(C, data_[i].moments);
-         draw_v_avg(C, data_[i].moments);
+         draw_moments(C, setup.teams[i].data.moments);
+         C.ctx.fillStyle = "#" + setup.teams[i].colour + "10";
+         fill_moments(C, setup.teams[i].data.moments);
+         draw_marks(C, setup.teams[i].data.moments);
+         draw_v_avg(C, setup.teams[i].data.moments);
       }
    }
    C.ctx.restore();
 
    if (G.bt[3].enabled)
-      leaderboard(C, TEXTX, 20, setup_, data_);
+      leaderboard(C, TEXTX, 20, setup);
    else
-      colorboard(C, C.width / 2, 60, setup_);
+      colorboard(C, C.width / 2, 60, setup);
 }
-
-
-
-// some global variables (_s: RaceSetup, _j: AllPositions3
-// FIXME: I hate this, but due to a lack of understanding of the fetch/then
-// construction I was yet unable to write this in a proper manner.
-var _s, _j;
 
 
 function match_array_coords(x, y, a)
@@ -585,7 +582,7 @@ function handle_mouse_pos(e)
    var mx = e.pageX - document.getElementById("chart").getBoundingClientRect().left;
    var my = e.pageY - document.getElementById("chart").getBoundingClientRect().top;
 
-   G.mo_index = match_array_coords(mx, my, _s.teams);
+   G.mo_index = match_array_coords(mx, my, setup_.teams);
    G.bt_index = match_array_coords(mx, my, G.bt);
 }
 
@@ -605,8 +602,8 @@ function mouse_move_handler(e)
  */
 function mouse_click_handler(e)
 {
-   if (G.mo_index >= 0 && G.mo_index < _s.teams.length)
-      _s.teams[G.mo_index].visible ^= 1;
+   if (G.mo_index >= 0 && G.mo_index < setup_.teams.length)
+      setup_.teams[G.mo_index].visible ^= 1;
    else if (G.bt_index >= 0)
       G.bt[G.bt_index].enabled ^= 1;
    else
@@ -619,22 +616,12 @@ function mouse_click_handler(e)
 }
 
 
-/*! This helper function puts the loaded data from the network into the global
- * variables.
- */
-function save_data(setup, jdata)
-{
-   _s = setup;
-   _j = jdata;
-}
-
-
 /*! This function is a wrapper for draw_data(). It is called by the window
  * resize event.
  */
 function update_graph()
 {
-   draw_data(_s, _j);
+   draw_data(setup_);
 }
 
 
@@ -643,25 +630,24 @@ function update_graph()
  */
 function get_data(server, race, init_func)
 {
-   fetch('https://' + server + '/JSON/' + race + '/leaderboard')
+   var t = '?t=' + Math.floor(time() / 300);
+   fetch('https://' + server + '/JSON/' + race + '/leaderboard' + t)
    .then((response) => response.json())
    .then((board) => {
-   fetch('https://' + server + '/JSON/' + race + '/RaceSetup')
+   fetch('https://' + server + '/JSON/' + race + '/RaceSetup' + t)
    .then((response) => response.json())
    .then(function(setup) {
-   fetch('https://' + server + '/BIN/' + race + '/AllPositions3')
+   fetch('https://' + server + '/BIN/' + race + '/AllPositions3' + t)
    .then((response) => response.arrayBuffer())
    .then((bindata) => parse(bindata))
    .then((data) => {
-      setup.teams.sort((a, b) => {return b.id - a.id;});
-      data.sort((a, b) => {return b.id - a.id;});
-      init_func(setup, data);
-      data_check(setup, data);
-      save_data(setup, data);
+      init_func(setup, data, board);
+      link_data(setup, data, board);
+      setup_ = setup;
       gen_grid();
       calc_chart();
       calc_course(setup.course.nodes);
-      calc_data(setup, data);
+      calc_data(setup);
       //document.getElementById("pre").innerHTML = JSON.stringify(data, null, 2);
       document.title = setup.title;
       update_graph();
