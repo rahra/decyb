@@ -2,7 +2,7 @@
  *
  * \file math.js
  * \author Bernhard R. Fischer <bf@abenteuerland.at>
- * \date 2022/10/04
+ * \date 2022/11/15
  */
 
 
@@ -454,5 +454,54 @@ function gen_grid()
       gen_lon(eq.nodes, e);
       c_.push(eq);
    }
+}
+
+
+/*! This function add one POI from the RaceSetup to the map.
+ */
+function gen_poi0(line)
+{
+   const MINDIST = 5.0;
+
+   var c = line.nodes.split(",").map(x => parseFloat(x));
+
+   // safety check, cp should have even number of elements
+   if (c.length & 1) return;
+
+   var w = {type: "way", tags: {type: "poi", polygon: line.polygon, colour: "#" + line.colour, name: line.name}, nodes: []};
+
+   // add 1st point to the end in case of a closed polygon
+   if (line.polygon)
+      c.push(c[0], c[1]);
+
+   for (var i = 0; i < c.length; i += 2)
+   {
+      w.nodes.push({N: c[i], E: c[i + 1]});
+      if (i < c.length - 2)
+      {
+         var dlat = c[i + 2] - c[i];
+         var dlon = c[i + 3] - c[i + 1];
+         var h = Math.hypot(dlat, dlon);
+         // add intermediate points if distance is to far (which is necessary to compensate the distorsion caused by the Admas Square II projection).
+         if (h > MINDIST)
+         {
+            var n = Math.ceil(h / MINDIST);
+            for (var j = 1; j < n; j++)
+               w.nodes.push({N: c[i] + dlat / n * j, E: c[i + 1] + dlon / n * j});
+         }
+      }
+   }
+
+   // add data to map data
+   c_.push(w);
+}
+
+
+/*! This function adds the POI data found in the RaceSetup to the map.
+ */
+function gen_poi(lines)
+{
+   for (var i = 0; i < lines.length; i++)
+      gen_poi0(lines[i]);
 }
 

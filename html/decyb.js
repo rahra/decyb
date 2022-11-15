@@ -9,7 +9,7 @@
  *
  * \file decyb.js
  * \author Bernhard R. Fischer <bf@abenteuerland.at>
- * \date 2022/10/04
+ * \date 2022/11/15
  */
 
 const NDIST = 20;
@@ -132,11 +132,20 @@ function draw_v_avg(C, moments, setup)
 }
 
 
+function translate_map(C)
+{
+   C.ctx.translate(C.width / 2, C.height / 2.9);
+   C.ctx.rotate(Math.PI / 8);
+   C.ctx.scale(1.3, 1.3);
+}
+
+
+/*! This function draws a track onto the map.
+ */
 function draw_moments_map(C, moments)
 {
    C.ctx.save();
-   C.ctx.translate(C.width / 2, C.height / 2);
-   C.ctx.rotate(Math.PI / 8);
+   translate_map(C);
  
    C.ctx.beginPath();
    //C.ctx.moveTo(0, C.d_max * C.sy);
@@ -434,15 +443,23 @@ function measure_names(C, setup)
 function draw_map(C)
 {
    var s = C.width;
+   var fill;
 
    C.ctx.save();
-   C.ctx.translate(C.width / 2, C.height / 2);
-   C.ctx.rotate(Math.PI / 8);
+   translate_map(C);
+
    C.ctx.lineWidth = 2;
    for (i = 0; i < c_.length; i++)
    {
+      fill = 0;
       switch (c_[i].tags.type)
       {
+         case "poi":
+            C.ctx.strokeStyle = c_[i].tags.colour;
+            C.ctx.fillStyle = c_[i].tags.colour + "40";
+            if (c_[i].tags.polygon)
+               fill = 1;
+            break;
          case "meridian":
          case "equator":
             C.ctx.strokeStyle = "#606000";
@@ -469,6 +486,8 @@ function draw_map(C)
          }
          C.ctx.lineTo(c_[i].nodes[j].x*s - s/2, c_[i].nodes[j].y*s - s/2);
       }
+      if (fill)
+         C.ctx.fill();
       C.ctx.stroke();
    }
    C.ctx.restore();
@@ -655,6 +674,7 @@ function get_data(server, race, init_func)
       link_data(setup, data, board);
       setup_ = setup;
       gen_grid();
+      gen_poi(setup.poi.lines);
       calc_chart();
       calc_course(setup.course.nodes);
       calc_data(setup);
