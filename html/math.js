@@ -282,7 +282,7 @@ function remove_retired_moments(id, moments)
  */
 function display_string(team)
 {
-   return team.name + ", dist = " + team.data.moments[0].dist_tot.toFixed(1) + ", v_avg = " + team.v_avg.toFixed(2) + (team.board && team.board.dtf > 0 ? ", dtf = " + (team.board.dtf / 1852).toFixed(0) : "");
+   return team.name + ", dist = " + team.data.moments[0].dist_tot.toFixed(1) + ", v_avg = " + team.v_avg.toFixed(2) + (team.status == "RACING" ? (team.board && team.board.dtf > 0 ? ", dtf = " + (team.board.dtf / 1852).toFixed(0) : "") : " (RETIRED)");
 }
 
 
