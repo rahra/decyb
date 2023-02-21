@@ -353,7 +353,9 @@ function link_data(setup, data, board)
    for (var i = 0; i < setup.teams.length; i++)
    {
       setup.teams[i].data = data.find(d => d.id == setup.teams[i].id);
-      setup.teams[i].board = board.tags[0].teams.find(d => d.id == setup.teams[i].id);
+      for (var j = 0; j < board.tags.length; j++)
+         if ((setup.teams[i].board = board.tags[j].teams.find(d => d.id == setup.teams[i].id)))
+            break;
    }
 }
 
