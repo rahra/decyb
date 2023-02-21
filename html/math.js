@@ -2,7 +2,7 @@
  *
  * \file math.js
  * \author Bernhard R. Fischer <bf@abenteuerland.at>
- * \date 2022/11/15
+ * \date 2023/02/21
  */
 
 
@@ -70,6 +70,13 @@ const DEC = 0x04;
  */
 function coord_str(pos, flags)
 {
+   var neg = 0;
+   if (pos < 0)
+   {
+      neg = 1;
+      pos = -pos;
+   }
+
    var ipos = Math.floor(pos);
    var dec = ((pos - Math.floor(pos)) * 60).toFixed(flags & DEC ? 1 : 0);
    var dir;
@@ -77,12 +84,12 @@ function coord_str(pos, flags)
 
    if (flags)
    {
-      dir = pos < 0 ? 'W' : 'E';
+      dir = neg ? 'W' : 'E';
       pad = pos < 10 ? '00' : (pos < 100 ? '0' : '');
    }
    else
    {
-      dir = pos < 0 ? 'S' : 'N';
+      dir = neg ? 'S' : 'N';
       pad = pos < 10 ? '0' : '';
    }
 
@@ -96,13 +103,45 @@ function cmp_id(a, b)
 }
 
 
+/*! Find if a boat passes a specific coordinate.
+ * @param moments Array of trackpoints.
+ * @param dim Dimension, is either LAT or LON.
+ * @param val The value of the dimension in decimal degrees.
+ */
+function find_pass(moments, dim, val)
+{
+   var dims = dim == LAT ? "lat" : "lon";
+   var v0, v1;
+   for (var i = moments.length - 1; i > 0; i--)
+   {
+      v0 = moments[i][dims];
+      v1 = moments[i - 1][dims];
+
+      // catch longitude wrapping
+      if (v0 - v1 >= 180)
+         v1 = 360 + v1;
+      else if (v0 - v1 <= -180)
+         v1 = -360 + v1;
+
+      if ((v0 >= val && v1 < val) || (v0 <= val && v1 > val))
+         moments[i].name = coord_str(val, dim);
+   }
+}
+
+
 /*! Find if a boat passes a specific latitude.
  */
 function find_pass_lat(moments, lat)
 {
-   for (var i = moments.length - 1; i > 0; i--)
-      if ((moments[i].lat >= lat && moments[i - 1].lat < lat) || (moments[i].lat <= lat && moments[i - 1].lat > lat))
-         moments[i].name = coord_str(lat, LAT);
+   return find_pass(moments, LAT, lat);
+}
+
+
+/*! Find if a boat passes a specific longitude.
+ */
+function find_pass_lon(moments, lon)
+{
+   return find_pass(moments, LON, lon);
 }
 
 
@@ -301,6 +340,10 @@ function calc_data(setup)
       calc_poi(setup.teams[i].data.moments);
       // find passing of equator
       find_pass_lat(setup.teams[i].data.moments, 0);
+      // find passing the date line
+      find_pass_lon(setup.teams[i].data.moments, 180);
+      // passing Cape Horn
+      find_pass_lon(setup.teams[i].data.moments, -67.292);
    }
 }
 
