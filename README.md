@@ -15,6 +15,11 @@ https://goldengloberace.com/live-tracker/) but it should work with any other
 race as well. The C version definitely works since it is just a decoder, the JS
 version would need some adaptions (see code for details).
 
+The JS code contains the full standalone viewer including the complete
+projection code for the Spilhaus projection.
+
+![sample1.jpg](img/sample1.jpg)
+
 # Author
 
 Bernhard R. Fischer <bf@abenteuerland.at>
