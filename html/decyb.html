@@ -4,6 +4,7 @@
       <meta charset="UTF-8">
       <meta name="author" content="Bernhard R. Fischer">
       <script src="adams.js" charset="UTF-8"></script>
+      <script src="racemath.js" charset="UTF-8"></script>
       <script src="math.js" charset="UTF-8"></script>
       <script src="decyb.js" charset="UTF-8"></script>
       <script src="coastline.js" charset="UTF-8"></script>
@@ -33,7 +34,7 @@
             "Hover over the participants' names to display the curves.\n" +
             "Click on the names to make the curves sticky.\n" +
             "Click somewhere else to switch color scheme.\n" +
-            "Racedata Viewer 2.2, Bernhard R. Fischer <bf@abenteuerland.at>\n" +
+            "Racedata Viewer 2.3, Bernhard R. Fischer <bf@abenteuerland.at>\n" +
             "Source: https://github.com/rahra/decyb";
 
          // additional individual race information
@@ -69,8 +70,8 @@
             board.tags[0].teams.push(vdhl_);
          }
 
-         //get_data("localhost", "ggr2022", prep_vdh);
-         get_data("cf.yb.tl", "ggr2022", prep_vdh);
+         //get_data("http://localhost", "ggr2022", prep_vdh);
+         get_data("https://cf.yb.tl", "ggr2022", prep_vdh);
 
       </script>
    </body>

@@ -19,6 +19,8 @@ const DEFX = 1920;
 const DEFY = 1080;
 const BUTTONW = 120;
 const BUTTONH = 25;
+const MAPSCALE = 1.0;
+const MIN_AVG = 0;
 
 //! global dynamic settings
 var G =
@@ -113,6 +115,12 @@ function draw_v_avg(C, moments, setup)
    C.ctx.moveTo(0, C.v_max * C.sy2);
    for (var i = moments.length - 1; i >= 0; i--)
    {
+      // ignore gaps of no movement
+      if (moments[i].v_avg < MIN_AVG)
+      {
+         C.ctx.stroke();
+         C.ctx.beginPath();
+      }
       C.ctx.lineTo((moments[i].at - C.t_min) * C.sx, (C.v_max - moments[i].v_avg) * C.sy2);
       if (moments[i].hasOwnProperty("v_avg_max"))
          ix = i;
@@ -136,7 +144,7 @@ function translate_map(C)
 {
    C.ctx.translate(C.width / 2, C.height / 2.9);
    C.ctx.rotate(Math.PI / 8);
-   C.ctx.scale(1.3, 1.3);
+   C.ctx.scale(MAPSCALE, MAPSCALE);
 }
 
 
@@ -168,13 +176,29 @@ function draw_moments(C, moments)
    C.ctx.beginPath();
    C.ctx.moveTo(0, C.d_max * C.sy);
    for (var i = moments.length - 1; i >= 0; i--)
+   {
+      // ignore gaps of no movement
+      if (moments[i].v_avg < MIN_AVG)
+      {
+         C.ctx.stroke();
+         C.ctx.beginPath();
+      }
       C.ctx.lineTo((moments[i].at - C.t_min) * C.sx, (C.d_max - moments[i].dist_tot) * C.sy);
+   }
    C.ctx.stroke();
 
    C.ctx.beginPath();
    C.ctx.moveTo(0, C.d_max * C.sy);
    for (var i = moments.length - 1; i >= 0; i--)
+   {
+      // ignore gaps of no movement
+      if (moments[i].v_avg < MIN_AVG)
+      {
+         C.ctx.stroke();
+         C.ctx.beginPath();
+      }
       C.ctx.lineTo((moments[i].at - C.t_min) * C.sx, (C.d_max - moments[i].dmg) * C.sy);
+   }
    C.ctx.stroke();
 }
 
@@ -657,32 +681,44 @@ function update_graph()
 /*! This function initially fetches the race data from the YB server.
  * FIXME: The subpath "ggr2022" should be replaced by a variable.
  */
-function get_data(server, race, init_func)
+function get_data(server, race, init_func = function(){}, bin = true)
 {
    var t = '?t=' + Math.floor(time() / 300);
-   fetch('https://' + server + '/JSON/' + race + '/leaderboard' + t)
+   fetch(server + '/JSON/' + race + '/leaderboard' + t)
    .then((response) => response.json())
    .then((board) => {
-   fetch('https://' + server + '/JSON/' + race + '/RaceSetup' + t)
+   fetch(server + '/JSON/' + race + '/RaceSetup' + t)
    .then((response) => response.json())
    .then(function(setup) {
-   fetch('https://' + server + '/BIN/' + race + '/AllPositions3' + t)
-   .then((response) => response.arrayBuffer())
-   .then((bindata) => parse(bindata))
-   .then((data) => {
-      init_func(setup, data, board);
-      link_data(setup, data, board);
-      setup_ = setup;
-      gen_grid();
-      gen_poi(setup.poi.lines);
-      calc_chart();
-      calc_course(setup.course.nodes);
-      calc_data(setup);
-      setup.teams.sort((a, b) => (a.board && b.board && a.board.dtf - b.board.dtf));
-      //document.getElementById("pre").innerHTML = JSON.stringify(data, null, 2);
-      document.title = setup.title;
-      update_graph();
-   })
+      function prep_data(data)
+      {
+         init_func(setup, data, board);
+         link_data(setup, data, board);
+         setup_ = setup;
+         gen_grid();
+         gen_poi(setup.poi.lines);
+         calc_chart();
+         RaceMath.calc_course(setup.course.nodes);
+         calc_data(setup);
+         setup.teams.sort((a, b) => (a.board && b.board && a.board.dtf - b.board.dtf));
+         //document.getElementById("pre").innerHTML = JSON.stringify(data, null, 2);
+         document.title = setup.title;
+         update_graph();
+      }
+
+      if (bin)
+      {
+         fetch(server + '/BIN/' + race + '/AllPositions3' + t)
+         .then((response) => response.arrayBuffer())
+         .then((bindata) => parse(bindata))
+         .then((data) => prep_data(data))
+      }
+      else
+      {
+         fetch(server + '/JSON/' + race + '/AllPositions3.json' + t)
+         .then((response) => response.json())
+         .then((data) => prep_data(data))
+      }
    })
    });
 }

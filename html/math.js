@@ -2,63 +2,8 @@
  *
  * \file math.js
  * \author Bernhard R. Fischer <bf@abenteuerland.at>
- * \date 2023/02/21
+ * \date 2023/09/15
  */
-
-
-function DEG2RAD(d)
-{
-   return d * Math.PI / 180;
-}
-
-
-function RAD2DEG(r)
-{
-   return r * 180 / Math.PI;
-}
-
-
-function fmod2(a)
-{
-   for (; a >= 360; a -= 360);
-   for (; a < 0; a += 360);
-   return a;
-}
-
-
-/*! Calculate the orthodrome distance between to geographic coordinates src and
- * dst defined by latitude and longitude. The result is stored as distance in
- * nautical miles and bearing in degrees dst2.
- */
-function coord_diff0(src, dst, dst2)
-{
-   var dlat, dlon;
-
-   // handle corner case if src == dst
-   if (src.lat == dst.lat && src.lon == dst.lon)
-   {
-      dst2.bearing = 0;
-      dst2.dist = 0;
-      return;
-   }
-
-   dlat = dst.lat - src.lat;
-   dlon = (dst.lon - src.lon) * Math.cos(DEG2RAD((src.lat + dst.lat) / 2.0));
-
-   dst2.bearing = fmod2(RAD2DEG(Math.atan2(dlon, dlat)));
-   dst2.dist = 60 * RAD2DEG(Math.acos(
-      Math.sin(DEG2RAD(src.lat)) * Math.sin(DEG2RAD(dst.lat)) +
-      Math.cos(DEG2RAD(src.lat)) * Math.cos(DEG2RAD(dst.lat)) * Math.cos(DEG2RAD(dst.lon - src.lon))));
-}
-
-
-/*! This is a wrapper function for coord_diff0(). It stores the result directly
- * into dst.
- */
-function coord_diff(src, dst)
-{
-   coord_diff0(src, dst, dst);
-}
 
 
 const LON = 0x01;
@@ -160,7 +105,7 @@ function calc_poi(moments)
       var ix = moments.length;
       for (var i = moments.length - 1; i >= 0; i--)
       {
-         coord_diff0(moments[i], rinfo_.nodes[j], d);
+         CMath.coord_diff0(moments[i], rinfo_.nodes[j], d);
          if (d.dist < dist)
          {
             dist = d.dist;
@@ -182,125 +127,6 @@ function time()
    return Math.floor(Date.now() / 1000);
 }
 
-
-/*! This function eliminates moments which happen in the future (according to
- * the timestamp) or which occured before the start of the race.
- */
-function clean_moments(moments, t_min, t_max)
-{
-   // remove elements before the start
-   for (; moments.slice(-1)[0].at < t_min;)
-      moments.pop();
-   // remove elements which are in the future
-   for (; moments[0].at > t_max;)
-      moments.shift();
-}
-
-
-/*! This function calculates the distance and bearing of the basic intend
- * course to go. The track points are ordered ascendingly in the RaceSetup
- * data.
- */
-function calc_course(moments)
-{
-   var dst = {bearing: 0, dist: 0};
-   moments[0].dist = moments[0].dist_tot = moments[0].bearing = 0;
-   for (var i = 0; i < moments.length - 1; i++)
-   {
-      coord_diff0(moments[i], moments[i + 1], dst);
-      moments[i].bearing = dst.bearing;
-      moments[i + 1].dist = dst.dist;
-      moments[i + 1].dist_tot = moments[i].dist_tot + dst.dist;
-   }
-}
-
-
-/*! Calculate the difference between 2 bearings (0 - 360).
- * @return The function always returns a value -180 <= v <= 180.
- */
-function diff_bearing(bear_mom, bear_course)
-{
-   var b = bear_mom - bear_course;
-   return b > 180 ? b - 360 : b;
-}
-
-
-/*! The function calculates if a bearing calculate from a moment does not
- * deviate more than 90 degrees to starboard (+90) or portside (-90).
- */
-function coursepoint_in_sight(bear_mom, bear_course)
-{
-   var v = diff_bearing(bear_mom, bear_course);
-   return v < 90 && v > -90;
-}
-
-
-/*! This function calculates the DMG and the DTF for every moment of each
- * participant's track.
- */
-function calc_dtf(moments, course)
-{
-   var dist_tot = course[course.length - 1].dist_tot;
-   var dst = {};
-   var i = moments.length - 1;
-   // Loop over all course points, starting with 2nd course point to avoid special corner case at the beginning of the ggr2022.
-   for (var j = 1; j < course.length && i < moments.length; j++)
-   {
-      for (; i >= 0; i--)
-      {
-         coord_diff0(moments[i], course[j], dst);
-         if (!coursepoint_in_sight(dst.bearing, course[j].bearing))
-            break;
-         moments[i].dtf = dist_tot - course[j].dist_tot + dst.dist;
-         moments[i].dmg = course[j].dist_tot - dst.dist;
-         /* just debugging
-         moments[i].d_j = j;
-         moments[i].d_b = diff_bearing(dst.bearing, course[j].bearing);
-         moments[i].d_dist = dst.dist;
-         moments[i].d_b2c = dst.bearing;
-         moments[i].d_cb = course[j].bearing; */
-      }
-   }
-}
-
-
-/* This function does some initial calculations in the track data. It
- * calculates the distance, the total distance, the bearing, and the average
- * speed for each track point, and it finds the point with the highest average
- * speed.
- * The trackpoints are ordered descendingly, so the latest point in time is the
- * first point in the arrays.
- */
-function calc_moments(moments, t_min)
-{
-   var ix = -1, v_avg = 0;
-
-   // set distance of 1st point to 0
-   moments[moments.length - 1].td = moments[moments.length - 1].dist = moments[moments.length - 1].dist_tot = 0;
-   for (var i = moments.length - 1; i; i--)
-   {
-      coord_diff(moments[i], moments[i - 1]);
-      moments[i - 1].dist_tot = moments[i - 1].dist + moments[i].dist_tot;
-
-      moments[i - 1].td = moments[i - 1].at - moments[i].at;
-      moments[i - 1].v_avg = moments[i - 1].td ? moments[i - 1].dist / moments[i - 1].td * 3600 : 0;
-
-      // find max avg speed
-      if (moments[i - 1].v_avg > v_avg)
-      {
-         v_avg = moments[i - 1].v_avg;
-         ix = i - 1;
-      }
-   }
-
-   if (ix == -1)
-      return 0;
-
-   // set max speed
-   moments[ix].v_avg_max = 1;
-   return moments[0].dist_tot * 3600 / (moments[0].at - moments[moments.length - 1].at);
-}
- 
 
 /*! Remove all track points (moments) after time of retirement.
  */
@@ -331,12 +157,15 @@ function calc_data(setup)
 {
    for (var i = 0; i < setup.teams.length; i++)
    {
-      clean_moments(setup.teams[i].data.moments, setup.teams[i].start, setup.teams[i].hasOwnProperty("finishedAt") ? Math.min(time(), setup.teams[i].finishedAt) : time());
+      RaceMath.clean_moments(setup.teams[i].data.moments, setup.teams[i].start, setup.teams[i].hasOwnProperty("finishedAt") ? Math.min(time(), setup.teams[i].finishedAt) : time());
+      //FIXME: the following depends on the global rinfo_. Should be moved out of here.
       remove_retired_moments(setup.teams[i].id, setup.teams[i].data.moments);
       setup.teams[i].visible = 0;
-      setup.teams[i].v_avg = calc_moments(setup.teams[i].data.moments, setup.teams[i].start);
+      setup.teams[i].t_move = RaceMath.calc_moments(setup.teams[i].data.moments);
+      setup.teams[i].v_avg = setup.teams[i].data.moments[0].dist_tot * 3600 / setup.teams[i].t_move;
       setup.teams[i].display_name = display_string(setup.teams[i]);
-      calc_dtf(setup.teams[i].data.moments, setup.course.nodes);
+      RaceMath.calc_dtf(setup.teams[i].data.moments, setup.course.nodes);
+      //FIXME: the following depends on the global rinfo_. Should be moved out of here.
       calc_poi(setup.teams[i].data.moments);
       // find passing of equator
       find_pass_lat(setup.teams[i].data.moments, 0);
@@ -378,16 +207,16 @@ function transcoord(theta, phi, lat0, lon0)
 {
    var lat, lon;
 
-   lat0 = DEG2RAD(lat0);
-   lon0 = DEG2RAD(lon0);
-   theta = DEG2RAD(theta);
-   phi = DEG2RAD(phi);
+   lat0 = CMath.DEG2RAD(lat0);
+   lon0 = CMath.DEG2RAD(lon0);
+   theta = CMath.DEG2RAD(theta);
+   phi = CMath.DEG2RAD(phi);
 
    lat = Math.asin(Math.cos(theta) * Math.sin(lat0) - Math.cos(lon0) * Math.sin(theta) * Math.cos(lat0));
    lon = Math.atan2(Math.sin(lon0), Math.tan(lat0) * Math.sin(theta) + Math.cos(lon0) * Math.cos(theta)) - phi;
 
-   lat0 = RAD2DEG(lat);
-   lon0 = lonmod(RAD2DEG(lon));
+   lat0 = CMath.RAD2DEG(lat);
+   lon0 = lonmod(CMath.RAD2DEG(lon));
 
    return {lat: lat0, lon: lon0};
 }
@@ -415,7 +244,7 @@ function trans_spilhaus(tc)
  */
 function coords_xy(s, tc)
 {
-   var xy = adams_square_ii(DEG2RAD(tc.lon), DEG2RAD(tc.lat));
+   var xy = adams_square_ii(CMath.DEG2RAD(tc.lon), CMath.DEG2RAD(tc.lat));
    xy.x = ((xy.x + A2_LAM_SCALE) * s) / (2 * A2_LAM_SCALE);
    xy.y = s - ((xy.y + A2_PHI_SCALE) * s) / (2 * A2_PHI_SCALE);
    return xy;
@@ -507,6 +336,9 @@ function gen_grid()
 function gen_poi0(line)
 {
    const MINDIST = 5.0;
+
+   if (line.nodes == undefined)
+      return undefined;
 
    var c = line.nodes.split(",").map(x => parseFloat(x));
 
