@@ -382,3 +382,51 @@ function gen_poi(lines)
       gen_poi0(lines[i]);
 }
 
+
+/*! This function approximates the declination of the sun. It should be
+ * replaced by something more appropriate. But for now it's ok.
+ */
+function sun_dec(d, m, y)
+{
+   const MD = 23.43;
+   const DC = 365.25 * 4;
+   const MF = (DC - 31) / 47;
+   const T0 = 2 * MF + 21;
+
+   var l = y % 4;
+   var dy = (m - 1 + l * 12) * MF + d;
+
+   return MD * Math.sin((dy - T0) / DC * Math.PI * 2 * 4);
+}
+
+
+/*! This function generates the sunrise/sunset line and adds it to the map.
+ */
+function gen_sunrise(d)
+{
+   var w = {type: "way", tags: {type: "sun", polygon: false, colour: "#0000A0", name: "sun"}, nodes: []};
+   var dec = sun_dec(d.getUTCDate(), d.getUTCMonth() + 1, d.getUTCFullYear());
+   var a = (d.getUTCHours() + d.getUTCMinutes() / 60 + d.getUTCSeconds() / 3600) / 24 * 360;
+
+   var lat, lon, tc;
+   for (var r = 0; r < 360; r += 5)
+   {
+      if (r <= 180)
+      {
+         lat = r - 90;
+         lon = -90;
+      }
+      else
+      {
+         lat = 270 - r;
+         lon = 90;
+      }
+
+      tc  = transcoord(dec, a, lat, lon);
+      w.nodes.push({N: tc.lat, E: tc.lon});
+   }
+
+   w.nodes.push(w.nodes[0]);
+   c_.push(w);
+}
+

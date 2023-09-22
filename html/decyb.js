@@ -478,6 +478,13 @@ function draw_map(C)
       fill = 0;
       switch (c_[i].tags.type)
       {
+         case "sun":
+            C.ctx.setLineDash([]);
+            C.ctx.strokeStyle = c_[i].tags.colour;
+            C.ctx.fillStyle = c_[i].tags.colour + "40";
+            if (c_[i].tags.polygon)
+               fill = 1;
+            break;
          case "poi":
             C.ctx.strokeStyle = c_[i].tags.colour;
             C.ctx.fillStyle = c_[i].tags.colour + "40";
@@ -697,6 +704,7 @@ function get_data(server, race, init_func = function(){}, bin = true)
          setup_ = setup;
          gen_grid();
          gen_poi(setup.poi.lines);
+         gen_sunrise(new Date());
          calc_chart();
          RaceMath.calc_course(setup.course.nodes);
          calc_data(setup);
