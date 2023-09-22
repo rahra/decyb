@@ -159,14 +159,14 @@ function calc_data(setup)
    {
       RaceMath.clean_moments(setup.teams[i].data.moments, setup.teams[i].start, setup.teams[i].hasOwnProperty("finishedAt") ? Math.min(time(), setup.teams[i].finishedAt) : time());
       //FIXME: the following depends on the global rinfo_. Should be moved out of here.
-      remove_retired_moments(setup.teams[i].id, setup.teams[i].data.moments);
+      //remove_retired_moments(setup.teams[i].id, setup.teams[i].data.moments);
       setup.teams[i].visible = 0;
       setup.teams[i].t_move = RaceMath.calc_moments(setup.teams[i].data.moments);
       setup.teams[i].v_avg = setup.teams[i].data.moments[0].dist_tot * 3600 / setup.teams[i].t_move;
       setup.teams[i].display_name = display_string(setup.teams[i]);
       RaceMath.calc_dtf(setup.teams[i].data.moments, setup.course.nodes);
       //FIXME: the following depends on the global rinfo_. Should be moved out of here.
-      calc_poi(setup.teams[i].data.moments);
+      //calc_poi(setup.teams[i].data.moments);
       // find passing of equator
       find_pass_lat(setup.teams[i].data.moments, 0);
       // find passing the date line
