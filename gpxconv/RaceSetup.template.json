@@ -1,0 +1,39 @@
+{
+   "teams":
+   [
+      {
+         "owner": "Bernhard Fischer",
+         "country": "Austria",
+         "img": "https:\/\/",
+         "flag": "AT",
+         "sail": "",
+         "thumb": "https:\/\/",
+         "start": 1683123900,
+         "tcf3": "1.000",
+         "started": true,
+         "tcf1": "1.000",
+         "type": "MONO_M",
+         "tcf2": "1.000",
+         "tags": [ 65036 ],
+         "maxLaps": 1,
+         "colour": "00FFFF",
+         "name": "Bernhard Fischer",
+         "model": "Belliure Endurance 35",
+         "id": 1,
+         "status": "RACING"
+      }
+   ],
+   "poi":
+   {
+      "lines":
+      [
+         {
+         }
+      ]
+   },
+   "title": "From the Mediterranean into the Arctic",
+   "course": { "nodes": [] },
+   "hashtag": "@bhsailor2023",
+   "tzOffset": 0,
+   "start": 1683123900
+}
