@@ -532,7 +532,7 @@ function draw_data(setup)
    // drawing parameters
    var C =
       {
-         t_min: Math.floor(Date.now() / 1000),
+         t_min: time(),
          t_max: 0, 
          d_max: 0,
          v_max: 10,
@@ -551,7 +551,7 @@ function draw_data(setup)
 
    for (var i = 0; i < setup.teams.length; i++)
    {
-      C.t_min = Math.min(C.t_min, setup.teams[i].start);
+      C.t_min = Math.min(C.t_min, setup.teams[i].start !== undefined ? setup.teams[i].start : time());
       C.t_max = Math.max(C.t_max, setup.teams[i].data.moments[0].at);
       C.d_max = Math.max(C.d_max, setup.teams[i].data.moments[0].dist_tot);
    }
