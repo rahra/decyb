@@ -90,56 +90,11 @@ function find_pass_lon(moments, lon)
 }
 
 
-/*! This function finds the nearest track points to the points defined in the
- * global array rinfo_.nodes. Nodes_ contains track marks such as the film
- * drops.
- * FIXME: rinfo_.nodes is currently manually defined although the data is found
- * in the RaceSetup. This will be rewritten.
- */
-function calc_poi(moments)
-{
-   for (var j = 0; j < rinfo_.nodes.length; j++)
-   {
-      var d = {};
-      var dist = 100000;
-      var ix = moments.length;
-      for (var i = moments.length - 1; i >= 0; i--)
-      {
-         CMath.coord_diff0(moments[i], rinfo_.nodes[j], d);
-         if (d.dist < dist)
-         {
-            dist = d.dist;
-            ix = i;
-         }
-      }
-
-      // Mark chosen trackpoint if distance < 100 nm. (It's assumed the the point was not reached of the distance is >100 nm.)
-      if (dist < 100)
-         moments[ix].name = rinfo_.nodes[j].name;
-   }
-}
-
-
 /*! This function returns to current time as a Unix timestamp in seconds.
  */
 function time()
 {
    return Math.floor(Date.now() / 1000);
-}
-
-
-/*! Remove all track points (moments) after time of retirement.
- */
-function remove_retired_moments(id, moments)
-{
-   for (var i = 0; i < rinfo_.retired.length; i++)
-   {
-      if (rinfo_.retired[i].id != id)
-         continue;
-
-      for (; moments.length && moments[0].at > rinfo_.retired[i].at;)
-         moments.shift();
-   }
 }
 
 
@@ -158,15 +113,11 @@ function calc_data(setup)
    for (var i = 0; i < setup.teams.length; i++)
    {
       RaceMath.clean_moments(setup.teams[i].data.moments, setup.teams[i].start, setup.teams[i].hasOwnProperty("finishedAt") ? Math.min(time(), setup.teams[i].finishedAt) : time());
-      //FIXME: the following depends on the global rinfo_. Should be moved out of here.
-      //remove_retired_moments(setup.teams[i].id, setup.teams[i].data.moments);
       setup.teams[i].visible = 0;
       setup.teams[i].t_move = RaceMath.calc_moments(setup.teams[i].data.moments);
       setup.teams[i].v_avg = setup.teams[i].data.moments[0].dist_tot * 3600 / setup.teams[i].t_move;
       setup.teams[i].display_name = display_string(setup.teams[i]);
       RaceMath.calc_dtf(setup.teams[i].data.moments, setup.course.nodes);
-      //FIXME: the following depends on the global rinfo_. Should be moved out of here.
-      //calc_poi(setup.teams[i].data.moments);
       // find passing of equator
       find_pass_lat(setup.teams[i].data.moments, 0);
       // find passing the date line
