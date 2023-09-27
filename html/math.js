@@ -2,7 +2,7 @@
  *
  * \file math.js
  * \author Bernhard R. Fischer <bf@abenteuerland.at>
- * \date 2023/09/15
+ * \date 2023/09/27
  */
 
 

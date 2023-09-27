@@ -9,7 +9,7 @@
  *
  * \file decyb.js
  * \author Bernhard R. Fischer <bf@abenteuerland.at>
- * \date 2022/11/15
+ * \date 2023/09/27
  */
 
 const NDIST = 20;
