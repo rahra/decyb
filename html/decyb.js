@@ -20,7 +20,7 @@ const DEFY = 1080;
 const BUTTONW = 120;
 const BUTTONH = 25;
 const MAPSCALE = 1.0;
-const MIN_AVG = 0;
+var MIN_AVG = 0;
 
 //! global dynamic settings
 var G =

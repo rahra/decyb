@@ -114,7 +114,7 @@ function calc_data(setup)
    {
       RaceMath.clean_moments(setup.teams[i].data.moments, setup.teams[i].start, setup.teams[i].hasOwnProperty("finishedAt") ? Math.min(time(), setup.teams[i].finishedAt) : time());
       setup.teams[i].visible = 0;
-      setup.teams[i].t_move = RaceMath.calc_moments(setup.teams[i].data.moments);
+      setup.teams[i].t_move = RaceMath.calc_moments(setup.teams[i].data.moments, MIN_AVG);
       setup.teams[i].v_avg = setup.teams[i].data.moments[0].dist_tot * 3600 / setup.teams[i].t_move;
       setup.teams[i].display_name = display_string(setup.teams[i]);
       RaceMath.calc_dtf(setup.teams[i].data.moments, setup.course.nodes);
