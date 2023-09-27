@@ -334,20 +334,20 @@ function gen_poi(lines)
 }
 
 
-/*! This function approximates the declination of the sun. It should be
- * replaced by something more appropriate. But for now it's ok.
+
+/*! This function approximates the declination of the sun.
  */
 function sun_dec(d, m, y)
 {
-   const MD = 23.43;
-   const DC = 365.25 * 4;
-   const MF = (DC - 31) / 47;
-   const T0 = 2 * MF + 21;
+   const MDAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+   const MDEC = 23.44;
 
-   var l = y % 4;
-   var dy = (m - 1 + l * 12) * MF + d;
+   d += 10;
+   for (var i = 0; i < m - 1; i++)
+      d += MDAYS[i];
+   var dy = 365 + (y % 4 == 0 ? 1 : 0);
 
-   return MD * Math.sin((dy - T0) / DC * Math.PI * 2 * 4);
+   return -MDEC * Math.cos(CMath.DEG2RAD(d * 360 /dy));
 }
 
 
