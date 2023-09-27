@@ -142,7 +142,7 @@ function draw_v_avg(C, moments, setup)
 
 function translate_map(C)
 {
-   C.ctx.translate(C.width / 2, C.height / 2.9);
+   C.ctx.translate(C.width / 2, C.height / 2);
    C.ctx.rotate(Math.PI / 8);
    C.ctx.scale(MAPSCALE, MAPSCALE);
 }
@@ -466,7 +466,7 @@ function measure_names(C, setup)
  */
 function draw_map(C)
 {
-   var s = C.width;
+   var s = Math.max(C.width, C.height);
    var fill;
 
    C.ctx.save();
