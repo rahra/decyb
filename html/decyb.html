@@ -26,18 +26,25 @@
          var title_ =
             "This diagram shows the distance sailed over time (upper part, upper curve),\n" +
             "the distance made good (upperpart lower curve), and the average speed\n" +
-            "(lower part) of all GGR2022 participants. The distance sailed is calculated\n" +
-            "by the actual trackpoints of each boat.\n" +
+            "(lower part) of all participants of a specific race provided by YB. The distance sailed is calculated\n" +
+            "by the actual trackpoints of each boat.\n\n" +
+            "Added the URL parameter ?race=NAME where NAME is name of race, e.g. ggr2022, or ogr2023.\n\n" +
             "The smaller the area between the two curves the closer does a participant\n" +
             "stay to the intended race course. It could be seen as a perfomance measure.\n" +
             "Hover over the participants' names to display the curves.\n" +
             "Click on the names to make the curves sticky.\n" +
             "Click somewhere else to switch color scheme.\n" +
-            "Racedata Viewer 2.4, Bernhard R. Fischer <bf@abenteuerland.at>\n" +
+            "The blue line within the map shows the daylight border.\n" +
+            "Racedata Viewer 2.5, Bernhard R. Fischer <bf@abenteuerland.at>\n" +
             "Source: https://github.com/rahra/decyb";
 
+         const urlParams = new URLSearchParams(window.location.search);
+         var race = urlParams.get('race')
+         if (race === null)
+            race = "ggr2022";
+
          //get_data("http://localhost", "ggr2022");
-         get_data("https://cf.yb.tl", "ggr2022");
+         get_data("https://cf.yb.tl", race);
 
       </script>
    </body>
