@@ -16,6 +16,10 @@ race as well. `decyb.html` is the entry page and you can add the URL parameter
 `race=...` to specifiy a specific race, e.g. `race=ogr2023` to show everything
 about the Ocean Globe Race 2023.
 
+To use it locally within your browser just clone this repo and then open the
+file `html/decyb.html` and add the URL paramter `race=ogr2023` or whatever race
+you wanna see.
+
 The C version definitely works since it is just a decoder, the JS
 version would need some adaptions (see code for details).
 
