@@ -12,7 +12,11 @@ into JSON files for your own further processing.
 
 This software is written specifically for the Golden Globe Race 2022 (see
 https://goldengloberace.com/live-tracker/) but it should work with any other
-race as well. The C version definitely works since it is just a decoder, the JS
+race as well. `decyb.html` is the entry page and you can add the URL parameter
+`race=...` to specifiy a specific race, e.g. `race=ogr2023` to show everything
+about the Ocean Globe Race 2023.
+
+The C version definitely works since it is just a decoder, the JS
 version would need some adaptions (see code for details).
 
 The JS code contains the full standalone viewer including the complete
