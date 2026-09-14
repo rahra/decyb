@@ -206,31 +206,37 @@ function coords_xy(s, tc)
 }
 
 
-/*! This function calculates the x/y coordinates of each map point. It's done
+/*! This function calculates the x/y coordinates of each point of a polygon. It's done
  * by translate each geographic coordinate into the Spilhaus reference system
  * and then applying the Adams Square II projection.
  */
-function calc_chart()
+function calc_way(w)
 {
-   for (i = 0; i < c_.length; i++)
+   var olon;
+   for (var j = 0; j < w.nodes.length; j++)
    {
-      var olon;
-      for (j = 0; j < c_[i].nodes.length; j++)
+      var tc = trans_spilhaus({lat: w.nodes[j].N, lon: w.nodes[j].E});
+      var xy = coords_xy(1, tc);
+      w.nodes[j].x = xy.x;
+      w.nodes[j].y = xy.y;
+      w.nodes[j].split = 0;
+      if (j)
       {
-         var tc = trans_spilhaus({lat: c_[i].nodes[j].N, lon: c_[i].nodes[j].E});
-         var xy = coords_xy(1, tc);
-         c_[i].nodes[j].x = xy.x;
-         c_[i].nodes[j].y = xy.y;
-         c_[i].nodes[j].split = 0;
-         if (j)
-         {
-            var dlon = tc.lon - olon;
-            olon = tc.lon;
-            if (Math.abs(dlon) > 180)
-               c_[i].nodes[j].split = 1;
-         }
+         var dlon = tc.lon - olon;
+         olon = tc.lon;
+         if (Math.abs(dlon) > 180)
+            w.nodes[j].split = 1;
       }
    }
+}
+
+
+/*! This function translates all polygons' coordinates (see calc_way()).
+ */
+function calc_chart()
+{
+   for (var i = 0; i < c_.length; i++)
+      calc_way(c_[i]);
 }
 
 
@@ -382,6 +388,6 @@ function gen_sunrise(d)
    }
 
    w.nodes.push(w.nodes[0]);
-   c_.push(w);
+   return w;
 }
 

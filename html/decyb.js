@@ -649,6 +649,8 @@ function handle_mouse_pos(e)
 
    G.mo_index = match_array_coords(mx, my, setup_.teams);
    G.bt_index = match_array_coords(mx, my, G.bt);
+
+   return G.mo_index != -1 || G.bt_index != -1;
 }
 
 
@@ -656,8 +658,7 @@ function handle_mouse_pos(e)
  */
 function mouse_move_handler(e)
 {
-   handle_mouse_pos(e);
-   update_graph();
+   handle_mouse_pos(e) && update_graph();
 }
 
 
@@ -687,8 +688,24 @@ function update_graph()
 }
 
 
+/*! Update the day-night terminator according to the current time.
+ */
+function update_sunrise()
+{
+   for (var i = 0; i < c_.length; i++)
+   {
+      if (c_[i].tags.type == "sun")
+      {
+         c_.splice(i, 1, gen_sunrise(new Date()));
+         calc_way(c_[i]);
+         break;
+      }
+   }
+   update_graph();
+}
+
+
 /*! This function initially fetches the race data from the YB server.
- * FIXME: The subpath "ggr2022" should be replaced by a variable.
  */
 function get_data(server, race, init_func = function(){}, bin = true)
 {
@@ -706,7 +723,7 @@ function get_data(server, race, init_func = function(){}, bin = true)
          setup_ = setup;
          gen_grid();
          gen_poi(setup.poi.lines);
-         gen_sunrise(new Date());
+         c_.push(gen_sunrise(new Date()));
          calc_chart();
          RaceMath.calc_course(setup.course.nodes);
          calc_data(setup);
@@ -742,6 +759,7 @@ function add_events()
    window.addEventListener('resize', function(e){update_graph()});
    document.getElementById("chart").addEventListener('mousemove', function(e){mouse_move_handler(e);});
    document.getElementById("chart").addEventListener('click', function(e){mouse_click_handler(e);});
+   setInterval(update_sunrise, 60000);
 }
 
 window.addEventListener('load', add_events);
