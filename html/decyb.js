@@ -627,6 +627,12 @@ function draw_data(setup)
       leaderboard(C, TEXTX, 20, setup);
    else
       colorboard(C, C.width / 2, 60, setup);
+
+   // date and time
+   const u = utc_str();
+   var tm = C.ctx.measureText(u);
+   C.ctx.fillStyle = col_.tx;
+   C.ctx.fillText(u, (C.width - tm.width) * 0.5, C.height - 20);
 }
 
 
@@ -647,10 +653,13 @@ function handle_mouse_pos(e)
    var mx = e.pageX - document.getElementById("chart").getBoundingClientRect().left;
    var my = e.pageY - document.getElementById("chart").getBoundingClientRect().top;
 
+   var mi = G.mo_index;
+   var bi = G.bt_index;
+
    G.mo_index = match_array_coords(mx, my, setup_.teams);
    G.bt_index = match_array_coords(mx, my, G.bt);
 
-   return G.mo_index != -1 || G.bt_index != -1;
+   return G.mo_index != mi || G.bt_index != bi;
 }
 
 

@@ -391,3 +391,16 @@ function gen_sunrise(d)
    return w;
 }
 
+
+/*! Return current date and time in UTC as string.
+ */
+function utc_str()
+{
+   //const m = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]; // english
+   const m = ["JAN", "FÉV", "MAR", "AVR", "MAI", "JUN", "JUL", "AOÛ", "SEP", "OCT", "NOV", "DÉC"]; // french
+   const d = new Date();
+   const p = (s) => s < 10 ? "0" : "" + s;
+
+   return d.getUTCDate() + " " + m[d.getUTCMonth()] + " " + d.getUTCFullYear() + " " + p(d.getUTCHours()) + ":" + p(d.getUTCMinutes()) + " UTC";
+}
+
