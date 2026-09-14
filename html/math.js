@@ -2,7 +2,7 @@
  *
  * \file math.js
  * \author Bernhard R. Fischer <bf@abenteuerland.at>
- * \date 2023/09/27
+ * \date 2026/09/14
  */
 
 
@@ -112,6 +112,10 @@ function calc_data(setup)
 {
    for (var i = 0; i < setup.teams.length; i++)
    {
+      // safety check
+      if (setup.teams[i].data == null)
+         continue;
+
       RaceMath.clean_moments(setup.teams[i].data.moments, setup.teams[i].start, setup.teams[i].hasOwnProperty("finishedAt") ? Math.min(time(), setup.teams[i].finishedAt) : time());
       setup.teams[i].visible = 0;
       setup.teams[i].t_move = RaceMath.calc_moments(setup.teams[i].data.moments, MIN_AVG);
