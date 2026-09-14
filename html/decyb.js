@@ -9,7 +9,7 @@
  *
  * \file decyb.js
  * \author Bernhard R. Fischer <bf@abenteuerland.at>
- * \date 2023/09/27
+ * \date 2026/09/14
  */
 
 const NDIST = 20;
@@ -47,7 +47,8 @@ const cscheme_ =
    {bg: "#171717", cap: "#b0b0b0", xbg: "#b0b0b030", xbgh: "#b0b0b050", bte: "#e0000030", bteh: "#e0000050", tx: "#c0c0c0"},
    {bg: "#e8e8d8", cap: "#404040", xbg: "#000000b0", xbgh: "#000000e0", bte: "#e0000030", bteh: "#e0000050", tx: "#e8e8e8"}
 ];
-var cur_scheme_ = 0;
+//! set color scheme according to system scheme
+var cur_scheme_ = 1 - window.matchMedia('(prefers-color-scheme: dark)').matches;
 var col_ = cscheme_[cur_scheme_];
 
 var tw_;
@@ -551,6 +552,10 @@ function draw_data(setup)
 
    for (var i = 0; i < setup.teams.length; i++)
    {
+      //safety check
+      if (setup.teams[i].data == null)
+         continue;
+
       C.t_min = Math.min(C.t_min, setup.teams[i].start !== undefined ? setup.teams[i].start : time());
       C.t_max = Math.max(C.t_max, setup.teams[i].data.moments[0].at);
       C.d_max = Math.max(C.d_max, setup.teams[i].data.moments[0].dist_tot);
@@ -667,10 +672,7 @@ function mouse_click_handler(e)
    else if (G.bt_index >= 0)
       G.bt[G.bt_index].enabled ^= 1;
    else
-   {
-      cur_scheme_ = (cur_scheme_ + 1) % cscheme_.length;
-      col_ = cscheme_[cur_scheme_];
-   }
+      return;
 
    update_graph();
 }
@@ -736,6 +738,7 @@ function get_data(server, race, init_func = function(){}, bin = true)
  */
 function add_events()
 {
+   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function(){cur_scheme_ ^= 1; col_ = cscheme_[cur_scheme_]; update_graph();});
    window.addEventListener('resize', function(e){update_graph()});
    document.getElementById("chart").addEventListener('mousemove', function(e){mouse_move_handler(e);});
    document.getElementById("chart").addEventListener('click', function(e){mouse_click_handler(e);});
