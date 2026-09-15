@@ -178,8 +178,10 @@ function transcoord(theta, phi, lat0, lon0)
 
 
 /*! This translates the coordinate tc to the Spilhaus reference system.
+ * @param tc Coordinates to translate (in degrees).
+ * @param inv Optional. Set to true for inverse translation.
  */
-function trans_spilhaus(tc)
+function trans_spilhaus(tc, inv = false)
 {
    var trans = [
       {tlat: 0, tlon: 66.94970198},
@@ -187,8 +189,11 @@ function trans_spilhaus(tc)
       {tlat: 0, tlon: 40.18},
       {tlat: -90, tlon: 0},
       ];
-   for (var i = 0; i < trans.length; i++)
+
+   for (var i = 0; !inv && i < trans.length; i++)
       tc = transcoord(trans[i].tlat, trans[i].tlon, tc.lat, tc.lon);
+   for (var i = trans.length - 1; inv && i >= 0; i--)
+      tc = transcoord(-trans[i].tlat, -trans[i].tlon, tc.lat, tc.lon);
 
    return tc;
 }
@@ -203,6 +208,16 @@ function coords_xy(s, tc)
    xy.x = ((xy.x + A2_LAM_SCALE) * s) / (2 * A2_LAM_SCALE);
    xy.y = s - ((xy.y + A2_PHI_SCALE) * s) / (2 * A2_PHI_SCALE);
    return xy;
+}
+
+
+/*! This is the reverse function of coords_xy(). It translates x/y coordinates
+ * back into latitude and longitude.
+ */
+function coords_latlon(s, tc)
+{
+   var xy = adams_square_ii_invert((tc.x * 2 * A2_LAM_SCALE) / s - A2_LAM_SCALE, ((s - tc.y) * 2 * A2_PHI_SCALE) / s - A2_PHI_SCALE);
+   return {lat: CMath.RAD2DEG(xy.y), lon: CMath.RAD2DEG(xy.x)};
 }
 
 
@@ -399,7 +414,7 @@ function utc_str()
    //const m = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]; // english
    const m = ["JAN", "FÉV", "MAR", "AVR", "MAI", "JUN", "JUL", "AOÛ", "SEP", "OCT", "NOV", "DÉC"]; // french
    const d = new Date();
-   const p = (s) => s < 10 ? "0" : "" + s;
+   const p = (s) => (s < 10 ? "0" : "") + s;
 
    return d.getUTCDate() + " " + m[d.getUTCMonth()] + " " + d.getUTCFullYear() + " " + p(d.getUTCHours()) + ":" + p(d.getUTCMinutes()) + " UTC";
 }
