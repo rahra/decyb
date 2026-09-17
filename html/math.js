@@ -2,7 +2,7 @@
  *
  * \file math.js
  * \author Bernhard R. Fischer <bf@abenteuerland.at>
- * \date 2026/09/14
+ * \date 2026/09/17
  */
 
 
@@ -27,7 +27,7 @@ function coord_str(pos, flags)
    var dir;
    var pad;
 
-   if (flags)
+   if (flags & LON)
    {
       dir = neg ? 'W' : 'E';
       pad = pos < 10 ? '00' : (pos < 100 ? '0' : '');
@@ -38,7 +38,7 @@ function coord_str(pos, flags)
       pad = pos < 10 ? '0' : '';
    }
 
-   return pad + ipos + '° ' + (flags & MIN ? (dec < 10 ? '0' : '') + dec : '') + (pos != 0.0 ? dir : '');;
+   return pad + ipos + '° ' + (flags & MIN ? (dec < 10 ? '0' : '') + dec + "'" : '') + (pos != 0.0 ? " " + dir : '');
 }
 
 
