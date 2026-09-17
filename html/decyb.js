@@ -32,7 +32,7 @@ var G =
    t: {},         //!< current translation matrix of diagram
    bt:
    [
-      {name: "INFO", enabled: 0, func: ()=>{}},
+      {name: "INFO", enabled: 0, func: ()=>{document.getElementById('info').classList.toggle('visible');}},
       {name: "MAP", enabled: 1, func: ()=>{document.getElementById('txpos').classList.toggle('hidden');}},
       {name: "DIAGRAM", enabled: 0, func: ()=>{}},
       {name: "LEADERBOARD", enabled: 0, func: ()=>{}},
@@ -251,32 +251,6 @@ function draw_marks(C, moments)
          C.ctx.fillText(moments[i].name, (moments[i].at - C.t_min) * C.sx, (C.d_max - moments[i].dist_tot) * C.sy - AR);
       }
    C.ctx.restore();
-}
-
-
-/*! This function prints the caption of the diagram.
- */
-function caption(C, x, y)
-{
-   var text = title_.split("\n");
-   var w = 0, b = 10;
-
-   for (var i = 0; i < text.length; i++)
-      w = Math.max(w, C.ctx.measureText(text[i]).width);
-   w += b;
-
-   C.ctx.save();
-   C.ctx.translate(x - w / 2, y);
-   C.ctx.beginPath();
-   C.ctx.fillStyle = col_.xbg;
-   C.ctx.rect(0, 0, w, 20 * (text.length + .5));
-   C.ctx.fill();
-
-   C.ctx.beginPath();
-   C.ctx.fillStyle = col_.tx;
-   for (var i = 0; i < text.length; i++)
-      C.ctx.fillText(text[i], b / 2, 20 * (i + 1));
-  C.ctx.restore();
 }
 
 
@@ -620,9 +594,6 @@ function draw_data(setup)
 
    buttons(C, C.width / 2, 20);
 
-   if (G.bt[0].enabled)
-      caption(C, C.width / 2, G.bt[3].enabled ? 60 : 95);
-
    C.ctx.save();
    C.ctx.translate(C.width * BORDER, C.height * BORDER);
    C.ctx.scale(1 - BORDER * 2, 1 - BORDER * 2);
@@ -666,6 +637,10 @@ function draw_data(setup)
       colorboard(C, C.width / 2, 60, setup);
 
    update_pos_time();
+
+   var ib = document.getElementById("info");
+   ib.style.color = col_.tx;
+   ib.style.background = col_.xbg;
 }
 
 
