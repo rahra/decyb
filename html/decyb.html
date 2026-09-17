@@ -14,11 +14,26 @@
             margin:0;
             height: 100%;
          }
+         .txpos {
+            position: absolute;
+            left: 50%;
+            bottom: 20px; /* Adjust distance from the bottom edge */
+            transform: translateX(-50%);
+            pointer-events:none;
+            font:14px sans-serif;
+            /* Recommended styles for overlay visibility */
+            z-index: 10;
+            text-align: center;
+         }
+         .txpos.hidden {
+            display: none;
+         }
       </style>
      </head>
    <body>
         <div style="position:relative">
          <canvas id="chart" style="display:block;"></canvas>
+         <div id="txpos" class="txpos"></div>
          </div>
       <!--<pre id="pre"></pre>-->
       <script defer="defer" type="text/javascript">

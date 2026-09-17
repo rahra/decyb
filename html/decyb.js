@@ -27,13 +27,16 @@ var G =
 {
    mo_index: -1,
    bt_index: -1,
+   mx: 0,         //!< current mouse x position
+   my: 0,         //!< current mouse y position
+   t: {},         //!< current translation matrix of diagram
    bt:
    [
-      {name: "INFO", enabled: 0},
-      {name: "MAP", enabled: 1},
-      {name: "DIAGRAM", enabled: 0},
-      {name: "LEADERBOARD", enabled: 0},
-      {name: "RACECOURSE", enabled: 0}
+      {name: "INFO", enabled: 0, func: ()=>{}},
+      {name: "MAP", enabled: 1, func: ()=>{document.getElementById('txpos').classList.toggle('hidden');}},
+      {name: "DIAGRAM", enabled: 0, func: ()=>{}},
+      {name: "LEADERBOARD", enabled: 0, func: ()=>{}},
+      {name: "RACECOURSE", enabled: 0, func: ()=>{}}
    ]
 };
 
@@ -141,11 +144,24 @@ function draw_v_avg(C, moments, setup)
 }
 
 
+/*! Translate screen coordinates to userland coordinates according to the
+ * translation matrix t.
+ */
+function trans_screen_coords(t, x1, y1)
+{
+   var y2 = (t.a * y1 - t.a * t.f - t.b * x1 + t.b * t.e) / (t.a * t.d - t.b * t.c);
+   var x2 = (x1 - t.c * y2 - t.e) / t.a;
+
+   return {x: x2, y: y2};
+}
+
+
 function translate_map(C)
 {
    C.ctx.translate(C.width / 2, C.height / 2);
    C.ctx.rotate(Math.PI / 8);
    C.ctx.scale(MAPSCALE, MAPSCALE);
+   G.t = C.ctx.getTransform();
 }
 
 
@@ -155,7 +171,7 @@ function draw_moments_map(C, moments)
 {
    C.ctx.save();
    translate_map(C);
- 
+
    C.ctx.beginPath();
    //C.ctx.moveTo(0, C.d_max * C.sy);
    for (var i = moments.length - 1; i >= 0; i--)
@@ -526,6 +542,27 @@ function draw_map(C)
 }
 
 
+function screen_latlon(s, mx, my)
+{
+   var nc = trans_screen_coords(G.t, mx, my);
+   nc.x += s * 0.5;
+   nc.y += s * 0.5;
+   var ll = coords_latlon(s, nc);
+   ll = trans_spilhaus(ll, true);
+   return ll;
+}
+
+
+function update_pos_time()
+{
+   var nc = screen_latlon(window.innerWidth, G.mx, G.my);
+   var txe = document.getElementById("txpos");
+   txe.style.color = col_.tx;
+   txe.style.background = col_.xbg;
+   txe.innerHTML = utc_str() + "<br>" + coord_str(nc.lat, LAT | MIN) + " " + coord_str(nc.lon, LON | MIN);
+}
+
+
 /*! This function is the main drawing function and draws the complete diagram.
  */
 function draw_data(setup)
@@ -628,11 +665,7 @@ function draw_data(setup)
    else
       colorboard(C, C.width / 2, 60, setup);
 
-   // date and time
-   const u = utc_str();
-   var tm = C.ctx.measureText(u);
-   C.ctx.fillStyle = col_.tx;
-   C.ctx.fillText(u, (C.width - tm.width) * 0.5, C.height - 20);
+   update_pos_time();
 }
 
 
@@ -650,14 +683,16 @@ function match_array_coords(x, y, a)
  */
 function handle_mouse_pos(e)
 {
-   var mx = e.pageX - document.getElementById("chart").getBoundingClientRect().left;
-   var my = e.pageY - document.getElementById("chart").getBoundingClientRect().top;
+   G.mx = e.pageX - document.getElementById("chart").getBoundingClientRect().left;
+   G.my = e.pageY - document.getElementById("chart").getBoundingClientRect().top;
+
+   update_pos_time();
 
    var mi = G.mo_index;
    var bi = G.bt_index;
 
-   G.mo_index = match_array_coords(mx, my, setup_.teams);
-   G.bt_index = match_array_coords(mx, my, G.bt);
+   G.mo_index = match_array_coords(G.mx, G.my, setup_.teams);
+   G.bt_index = match_array_coords(G.mx, G.my, G.bt);
 
    return G.mo_index != mi || G.bt_index != bi;
 }
@@ -680,7 +715,10 @@ function mouse_click_handler(e)
    if (G.mo_index >= 0 && G.mo_index < setup_.teams.length)
       setup_.teams[G.mo_index].visible ^= 1;
    else if (G.bt_index >= 0)
+   {
       G.bt[G.bt_index].enabled ^= 1;
+      G.bt[G.bt_index].func();
+   }
    else
       return;
 
